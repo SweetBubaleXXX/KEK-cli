@@ -1,7 +1,11 @@
 import argparse
+import logging
+
 from KEK.hybrid import PrivateKEK
 
 __version__ = "0.1.0"
+
+logging.basicConfig()
 
 parser = argparse.ArgumentParser(
     description="CLI for Kinetic Encryption Key"
@@ -38,11 +42,6 @@ generate_parser.add_argument(
 generate_parser.set_defaults(func=lambda *x: print(x))
 
 encrypt_parser = subparsers.add_parser("encrypt", help="encrypt file")
-encrypt_parser.add_argument(
-    "file",
-    nargs="+",
-    type=argparse.FileType("r"),
-)
 encrypt_parser.set_defaults(func=lambda *x: print(x))
 
 decrypt_parser = subparsers.add_parser("decrypt", help="decrypt file")
@@ -60,15 +59,23 @@ import_parser.set_defaults(func=lambda *x: print(x))
 export_parser = subparsers.add_parser("export", help="export key to file")
 export_parser.set_defaults(func=lambda *x: print(x))
 
-for subparser in [encrypt_parser, sign_parser, export_parser]:
+for subparser in [encrypt_parser, decrypt_parser, sign_parser, export_parser]:
     subparser.add_argument(
         "-o",
         "--output",
         type=str,
-        dest="filename"
+        dest="output_file",
+        metavar="FILENAME"
     )
 
 for subparser in [encrypt_parser, decrypt_parser, sign_parser, verify_parser]:
+    subparser.add_argument(
+        "-k",
+        "--key-file",
+        type=argparse.FileType("r"),
+        dest="key_file",
+        help="use key from specific file"
+    )
     subparser.add_argument(
         "-i",
         "--id",
@@ -76,12 +83,13 @@ for subparser in [encrypt_parser, decrypt_parser, sign_parser, verify_parser]:
         dest="key_id",
         help="id of a key to use"
     )
+
+for subparser in [encrypt_parser, decrypt_parser,
+                  sign_parser, verify_parser, import_parser]:
     subparser.add_argument(
-        "-k",
-        "--key-file",
+        "file",
+        nargs="+",
         type=argparse.FileType("r"),
-        dest="key_file",
-        help="use key from specific file"
     )
 
 
