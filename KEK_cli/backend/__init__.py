@@ -37,9 +37,11 @@ class KeyManager:
                 "default": self.default_key,
                 "private": list(self.private_keys),
                 "public": list(self.public_keys)
-            }, f)
+            }, f, indent=2)
 
-    def __get_key_path(self, id: str) -> str:
+    def __get_key_path(self, id: str, public: Optional[bool] = False) -> str:
+        if public:
+            return get_full_path(f"{id}.pub.kek", self.kek_dir)
         return get_full_path(f"{id}.kek", self.kek_dir)
 
     def __save_key_to_file(self, path: str,
@@ -107,12 +109,14 @@ class KeyManager:
             self.private_keys.add(key_id)
             if not self.default_key:
                 self.default_key = key_id
+            self.__save_key_to_file(self.__get_key_path(key_id), key, password)
         except exceptions.KeyLoadingError:
             key = self.__load_public_key(self.__read_key(path))
             key_id = self.__decode_key_id(key.key_id)
             self.public_keys.add(key_id)
+            self.__save_key_to_file(self.__get_key_path(key_id, True),
+                                    key, password)
         finally:
-            self.__save_key_to_file(self.__get_key_path(key_id), key, password)
             self.__write_config()
 
     def export_key(self, id: str, private: Optional[bool] = False,
@@ -120,9 +124,16 @@ class KeyManager:
                    password: Optional[str] = None,
                    work_dir: Optional[str] = None) -> None:
         if private:
-            output_path = get_full_path(output_file or "private.kek", work_dir)
+            output_path = get_full_path(output_file or f"{id}.kek", work_dir)
         else:
-            output_path = get_full_path(output_file or "public.kek", work_dir)
+            output_path = get_full_path(output_file or f"{id}.pub.kek",
+                                        work_dir)
+        if not private:
+            for key_id in self.public_keys:
+                if key_id == id:
+                    key_bytes = self.__read_key(self.__get_key_path(id, True))
+                    key_obj = self.__load_public_key(key_bytes)
+                    return self.__save_key_to_file(output_path, key_obj)
         for key_id in self.private_keys:
             if key_id == id:
                 key_bytes = self.__read_key(self.__get_key_path(id))
@@ -131,8 +142,3 @@ class KeyManager:
                     return self.__save_key_to_file(output_path,
                                                    key_obj, password)
                 return self.__save_key_to_file(output_path, key_obj.public_key)
-        for key_id in self.public_keys:
-            if key_id == id:
-                key_bytes = self.__read_key(self.__get_key_path(id))
-                key_obj = self.__load_public_key(key_bytes)
-                return self.__save_key_to_file(output_path, key_obj)
