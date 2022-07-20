@@ -84,7 +84,17 @@ class KeyManager:
             return password.encode("ascii")
         return password
 
-    def generate(self, key_size: int, password: Optional[str] = None) -> None:
+    def is_encrypted(self, key_id: Optional[str] = None,
+                     path: Optional[str] = None) -> bool:
+        if key_id and key_id.endswith(".pub"):
+            return False
+        key = self.__read_key(path or
+                              self.__get_key_path(key_id or self.default_key))
+        if key.splitlines()[0] == b"-----BEGIN ENCRYPTED PRIVATE KEY-----":
+            return True
+        return False
+
+    def generate(self, key_size: int, password: Optional[str] = None) -> str:
         key = PrivateKEK.generate(key_size)
         key_id = self.__decode_key_id(key.key_id)
         self.private_keys.add(key_id)
@@ -93,10 +103,11 @@ class KeyManager:
         self.__save_key_to_file(self.__get_key_path(key_id),
                                 key, password)
         self.__write_config()
+        return key_id
 
     def encrypt(self, file: str, output_file: Optional[str] = None,
                 key_id: Optional[str] = None, password: Optional[str] = None,
-                work_dir: Optional[str] = None) -> None:
+                work_dir: Optional[str] = None) -> str:
         path = get_full_path(file, work_dir)
         if key_id and key_id.endswith(".pub"):
             key = self.__load_public_key(
@@ -106,20 +117,22 @@ class KeyManager:
                 self.__read_key(
                     self.__get_key_path(key_id or self.default_key)), password)
         encrypted_bytes = key.encrypt(self.__read_file(path))
-        output_filename = output_file or f"{file}.kek"
-        self.__write_file(get_full_path(output_filename), encrypted_bytes)
+        output_path = get_full_path(output_file or f"{file}.kek")
+        self.__write_file(output_path, encrypted_bytes)
+        return output_path
 
     def decrypt(self, file: str, output_file: Optional[str] = None,
                 key_id: Optional[str] = None, password: Optional[str] = None,
-                work_dir: Optional[str] = None) -> None:
+                work_dir: Optional[str] = None) -> str:
         path = get_full_path(file, work_dir)
         key = self.__load_private_key(
             self.__read_key(
                 self.__get_key_path(key_id or self.default_key)), password)
         decrypted_bytes = key.decrypt(self.__read_file(path))
-        output_filename = output_file or (
-            file.endswith(".kek") and file[:-4]) or file
-        self.__write_file(get_full_path(output_filename), decrypted_bytes)
+        output_path = get_full_path(
+            output_file or (file.endswith(".kek") and file[:-4]) or file)
+        self.__write_file(output_path, decrypted_bytes)
+        return output_path
 
     def sign(self):
         pass
@@ -128,7 +141,7 @@ class KeyManager:
         pass
 
     def import_key(self, file: str, password: Optional[str] = None,
-                   work_dir: Optional[str] = None) -> None:
+                   work_dir: Optional[str] = None) -> str:
         path = get_full_path(file, work_dir)
         try:
             key = self.__load_private_key(self.__read_key(path), password)
@@ -144,6 +157,7 @@ class KeyManager:
             self.__save_key_to_file(self.__get_key_path(key_id), key)
         finally:
             self.__write_config()
+            return key_id
 
     def export_key(self, id: str, public: Optional[bool] = False,
                    output_file: Optional[str] = None,

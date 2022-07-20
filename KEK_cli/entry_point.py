@@ -1,7 +1,9 @@
+import logging
 from .parser import parser
 
 
 def main():
     args = parser.parse_args()
-    verbose = args.verbose
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
     args.func(args)

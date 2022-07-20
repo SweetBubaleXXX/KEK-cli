@@ -4,6 +4,9 @@ from KEK.hybrid import PrivateKEK
 
 from ._version import __version__
 from .key_manager import key_manager
+from .adapter import CliAdapter
+
+adapter = CliAdapter(key_manager)
 
 parser = argparse.ArgumentParser(
     description="CLI for Kinetic Encryption Key"
@@ -37,21 +40,13 @@ generate_parser.add_argument(
     dest="key_size",
     help=f"size of a key, default - {PrivateKEK.default_size}",
 )
-generate_parser.set_defaults(
-    func=lambda args: key_manager.generate(args.key_size)
-)
+generate_parser.set_defaults(func=adapter.generate)
 
 encrypt_parser = subparsers.add_parser("encrypt", help="encrypt file")
-encrypt_parser.set_defaults(
-    func=lambda args: key_manager.encrypt(args.file[0].name, args.output_file,
-                                          args.key_id)
-)
+encrypt_parser.set_defaults(func=adapter.encrypt)
 
 decrypt_parser = subparsers.add_parser("decrypt", help="decrypt file")
-decrypt_parser.set_defaults(
-    func=lambda args: key_manager.decrypt(args.file[0].name, args.output_file,
-                                          args.key_id)
-)
+decrypt_parser.set_defaults(func=adapter.decrypt)
 
 sign_parser = subparsers.add_parser("sign", help="sign file")
 sign_parser.set_defaults(func=lambda *x: print(x))
@@ -60,9 +55,7 @@ verify_parser = subparsers.add_parser("verify", help="verify signature")
 verify_parser.set_defaults(func=lambda *x: print(x))
 
 import_parser = subparsers.add_parser("import", help="import key from file")
-import_parser.set_defaults(
-    func=lambda args: key_manager.import_key(args.file[0].name)
-)
+import_parser.set_defaults(func=adapter.import_key)
 
 export_parser = subparsers.add_parser("export", help="export key to file")
 export_parser.add_argument(
@@ -75,10 +68,7 @@ export_parser.add_argument(
     "id",
     type=str
 )
-export_parser.set_defaults(
-    func=lambda args: key_manager.export_key(args.id, args.public,
-                                             args.output_file)
-)
+export_parser.set_defaults(func=adapter.export_key)
 
 for subparser in [encrypt_parser, decrypt_parser, sign_parser, export_parser]:
     subparser.add_argument(
@@ -102,6 +92,6 @@ for subparser in [encrypt_parser, decrypt_parser,
                   sign_parser, verify_parser, import_parser]:
     subparser.add_argument(
         "file",
-        nargs="+",
+        # nargs="+",
         type=argparse.FileType("r"),
     )
