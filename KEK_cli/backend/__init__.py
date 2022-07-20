@@ -39,9 +39,7 @@ class KeyManager:
                 "public": list(self.public_keys)
             }, f, indent=2)
 
-    def __get_key_path(self, id: str, public: Optional[bool] = False) -> str:
-        if public:
-            return get_full_path(f"{id}.pub.kek", self.kek_dir)
+    def __get_key_path(self, id: str) -> str:
         return get_full_path(f"{id}.kek", self.kek_dir)
 
     def __save_key_to_file(self, path: str,
@@ -60,6 +58,14 @@ class KeyManager:
     def __write_key(self, path: str, serialized_bytes: bytes) -> None:
         with open(path, "w") as f:
             f.write(serialized_bytes.decode("ascii"))
+
+    def __read_file(self, path: str) -> bytes:
+        with open(path, "rb") as f:
+            return f.read()
+
+    def __write_file(self, path: str, byte_data: bytes) -> None:
+        with open(path, "wb") as f:
+            f.write(byte_data)
 
     def __load_private_key(self, serialized_bytes: bytes,
                            password: Optional[str] = None) -> PrivateKEK:
@@ -88,11 +94,32 @@ class KeyManager:
                                 key, password)
         self.__write_config()
 
-    def encrypt(self):
-        pass
+    def encrypt(self, file: str, output_file: Optional[str] = None,
+                key_id: Optional[str] = None, password: Optional[str] = None,
+                work_dir: Optional[str] = None) -> None:
+        path = get_full_path(file, work_dir)
+        if key_id and key_id.endswith(".pub"):
+            key = self.__load_public_key(
+                self.__read_key(self.__get_key_path(key_id)))
+        else:
+            key = self.__load_private_key(
+                self.__read_key(
+                    self.__get_key_path(key_id or self.default_key)), password)
+        encrypted_bytes = key.encrypt(self.__read_file(path))
+        output_filename = output_file or f"{file}.kek"
+        self.__write_file(get_full_path(output_filename), encrypted_bytes)
 
-    def decrypt(self):
-        pass
+    def decrypt(self, file: str, output_file: Optional[str] = None,
+                key_id: Optional[str] = None, password: Optional[str] = None,
+                work_dir: Optional[str] = None) -> None:
+        path = get_full_path(file, work_dir)
+        key = self.__load_private_key(
+            self.__read_key(
+                self.__get_key_path(key_id or self.default_key)), password)
+        decrypted_bytes = key.decrypt(self.__read_file(path))
+        output_filename = output_file or (
+            file.endswith(".kek") and file[:-4]) or file
+        self.__write_file(get_full_path(output_filename), decrypted_bytes)
 
     def sign(self):
         pass
@@ -112,33 +139,31 @@ class KeyManager:
             self.__save_key_to_file(self.__get_key_path(key_id), key, password)
         except exceptions.KeyLoadingError:
             key = self.__load_public_key(self.__read_key(path))
-            key_id = self.__decode_key_id(key.key_id)
+            key_id = f"{self.__decode_key_id(key.key_id)}.pub"
             self.public_keys.add(key_id)
-            self.__save_key_to_file(self.__get_key_path(key_id, True),
-                                    key, password)
+            self.__save_key_to_file(self.__get_key_path(key_id), key)
         finally:
             self.__write_config()
 
-    def export_key(self, id: str, private: Optional[bool] = False,
+    def export_key(self, id: str, public: Optional[bool] = False,
                    output_file: Optional[str] = None,
                    password: Optional[str] = None,
                    work_dir: Optional[str] = None) -> None:
-        if private:
-            output_path = get_full_path(output_file or f"{id}.kek", work_dir)
-        else:
-            output_path = get_full_path(output_file or f"{id}.pub.kek",
-                                        work_dir)
-        if not private:
+        output_path = get_full_path(output_file or f"{id}.kek", work_dir)
+        if id.endswith(".pub"):
             for key_id in self.public_keys:
-                if key_id == id:
-                    key_bytes = self.__read_key(self.__get_key_path(id, True))
-                    key_obj = self.__load_public_key(key_bytes)
-                    return self.__save_key_to_file(output_path, key_obj)
-        for key_id in self.private_keys:
-            if key_id == id:
+                if key_id != id:
+                    continue
+                key_bytes = self.__read_key(self.__get_key_path(id))
+                key_obj = self.__load_public_key(key_bytes)
+                return self.__save_key_to_file(output_path, key_obj)
+        else:
+            for key_id in self.private_keys:
+                if key_id != id:
+                    continue
                 key_bytes = self.__read_key(self.__get_key_path(id))
                 key_obj = self.__load_private_key(key_bytes, password)
-                if private:
+                if public:
                     return self.__save_key_to_file(output_path,
-                                                   key_obj, password)
-                return self.__save_key_to_file(output_path, key_obj.public_key)
+                                                   key_obj.public_key)
+                return self.__save_key_to_file(output_path, key_obj, password)

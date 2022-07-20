@@ -42,10 +42,16 @@ generate_parser.set_defaults(
 )
 
 encrypt_parser = subparsers.add_parser("encrypt", help="encrypt file")
-encrypt_parser.set_defaults(func=lambda *x: print(x))
+encrypt_parser.set_defaults(
+    func=lambda args: key_manager.encrypt(args.file[0].name, args.output_file,
+                                          args.key_id)
+)
 
 decrypt_parser = subparsers.add_parser("decrypt", help="decrypt file")
-decrypt_parser.set_defaults(func=lambda *x: print(x))
+decrypt_parser.set_defaults(
+    func=lambda args: key_manager.decrypt(args.file[0].name, args.output_file,
+                                          args.key_id)
+)
 
 sign_parser = subparsers.add_parser("sign", help="sign file")
 sign_parser.set_defaults(func=lambda *x: print(x))
@@ -60,17 +66,17 @@ import_parser.set_defaults(
 
 export_parser = subparsers.add_parser("export", help="export key to file")
 export_parser.add_argument(
-    "--private",
+    "--public",
     action="store_true",
-    dest="private",
-    help="export private key"
+    dest="public",
+    help="export public key"
 )
 export_parser.add_argument(
     "id",
     type=str
 )
 export_parser.set_defaults(
-    func=lambda args: key_manager.export_key(args.id, args.private,
+    func=lambda args: key_manager.export_key(args.id, args.public,
                                              args.output_file)
 )
 
@@ -86,14 +92,7 @@ for subparser in [encrypt_parser, decrypt_parser, sign_parser, export_parser]:
 for subparser in [encrypt_parser, decrypt_parser, sign_parser, verify_parser]:
     subparser.add_argument(
         "-k",
-        "--key-file",
-        type=argparse.FileType("r"),
-        dest="key_file",
-        help="use key from specific file"
-    )
-    subparser.add_argument(
-        "-i",
-        "--id",
+        "--key",
         type=str,
         dest="key_id",
         help="id of a key to use"
