@@ -55,6 +55,11 @@ verify_parser = subparsers.add_parser("verify", help="verify signature")
 verify_parser.set_defaults(func=lambda *x: print(x))
 
 import_parser = subparsers.add_parser("import", help="import key from file")
+import_parser.add_argument(
+    "file",
+    type=argparse.FileType("r"),
+    help="file with key"
+)
 import_parser.set_defaults(func=adapter.import_key)
 
 export_parser = subparsers.add_parser("export", help="export key to file")
@@ -88,10 +93,9 @@ for subparser in [encrypt_parser, decrypt_parser, sign_parser, verify_parser]:
         help="id of a key to use"
     )
 
-for subparser in [encrypt_parser, decrypt_parser,
-                  sign_parser, verify_parser, import_parser]:
+for subparser in [encrypt_parser, decrypt_parser, sign_parser, verify_parser]:
     subparser.add_argument(
-        "file",
-        # nargs="+",
+        "files",
+        nargs="+",
         type=argparse.FileType("r"),
     )

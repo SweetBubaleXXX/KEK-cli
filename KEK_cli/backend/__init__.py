@@ -117,7 +117,8 @@ class KeyManager:
                 self.__read_key(
                     self.__get_key_path(key_id or self.default_key)), password)
         encrypted_bytes = key.encrypt(self.__read_file(path))
-        output_path = get_full_path(output_file or f"{file}.kek")
+        default_filename = f"{file}.kek"
+        output_path = get_full_path(output_file or , work_dir)
         self.__write_file(output_path, encrypted_bytes)
         return output_path
 
@@ -129,8 +130,10 @@ class KeyManager:
             self.__read_key(
                 self.__get_key_path(key_id or self.default_key)), password)
         decrypted_bytes = key.decrypt(self.__read_file(path))
+        default_filename = file.endswith(".kek") and file[:-4] or file
         output_path = get_full_path(
-            output_file or (file.endswith(".kek") and file[:-4]) or file)
+            output_file or,
+            work_dir)
         self.__write_file(output_path, decrypted_bytes)
         return output_path
 
