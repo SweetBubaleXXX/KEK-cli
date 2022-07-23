@@ -51,6 +51,8 @@ class KeyManager:
             self.__write_key(path, key_obj.serialize())
 
     def __read_key(self, path: str) -> bytes:
+        if not os.path.isfile(path):
+            logging.error("Key not found")
         with open(path, "r") as f:
             return f.read().encode("ascii")
 
