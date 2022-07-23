@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-from os import path
 from typing import Optional, Union
 
 from KEK import exceptions
@@ -15,16 +14,16 @@ class KeyManager:
         self.__load_kek_dir()
 
     def __load_kek_dir(self) -> None:
-        home_dir = path.expanduser("~")
-        self.kek_dir = path.join(home_dir, ".kek")
-        if not path.isdir(self.kek_dir):
+        home_dir = os.path.expanduser("~")
+        self.kek_dir = os.path.join(home_dir, ".kek")
+        if not os.path.isdir(self.kek_dir):
             os.mkdir(self.kek_dir)
         self.__load_config()
 
     def __load_config(self) -> None:
-        self.config_path = path.join(self.kek_dir, "config.json")
+        self.config_path = os.path.join(self.kek_dir, "config.json")
         config = {}
-        if path.isfile(self.config_path):
+        if os.path.isfile(self.config_path):
             with open(self.config_path, "r") as f:
                 config = json.load(f)
         self.default_key = config.get("default", None)
@@ -108,7 +107,7 @@ class KeyManager:
     def encrypt(self, file: str, output_file: Optional[str] = None,
                 key_id: Optional[str] = None, password: Optional[str] = None,
                 work_dir: Optional[str] = None) -> str:
-        path = get_full_path(file, work_dir)
+        file_path = get_full_path(file, work_dir)
         if key_id and key_id.endswith(".pub"):
             key = self.__load_public_key(
                 self.__read_key(self.__get_key_path(key_id)))
@@ -116,24 +115,26 @@ class KeyManager:
             key = self.__load_private_key(
                 self.__read_key(
                     self.__get_key_path(key_id or self.default_key)), password)
-        encrypted_bytes = key.encrypt(self.__read_file(path))
+        encrypted_bytes = key.encrypt(self.__read_file(file_path))
         default_filename = f"{file}.kek"
-        output_path = get_full_path(output_file or , work_dir)
+        output_path = get_full_path(output_file or default_filename, work_dir)
+        if os.path.isdir(output_path):
+            output_path = os.path.join(output_path, default_filename)
         self.__write_file(output_path, encrypted_bytes)
         return output_path
 
     def decrypt(self, file: str, output_file: Optional[str] = None,
                 key_id: Optional[str] = None, password: Optional[str] = None,
                 work_dir: Optional[str] = None) -> str:
-        path = get_full_path(file, work_dir)
+        file_path = get_full_path(file, work_dir)
         key = self.__load_private_key(
             self.__read_key(
                 self.__get_key_path(key_id or self.default_key)), password)
-        decrypted_bytes = key.decrypt(self.__read_file(path))
+        decrypted_bytes = key.decrypt(self.__read_file(file_path))
         default_filename = file.endswith(".kek") and file[:-4] or file
-        output_path = get_full_path(
-            output_file or,
-            work_dir)
+        output_path = get_full_path(output_file or default_filename, work_dir)
+        if os.path.isdir(output_path):
+            output_path = os.path.join(output_path, default_filename)
         self.__write_file(output_path, decrypted_bytes)
         return output_path
 

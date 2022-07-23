@@ -7,14 +7,14 @@ from typing import Callable, Optional
 from .backend import KeyManager
 
 
-def pinentry(property: str):
+def pinentry(attribute: str):
     def decorator(func: Callable):
         @wraps(func)
         def wrapper(self, args: Namespace):
-            if self.key_manager.is_encrypted(getattr(args, property)):
+            if self.key_manager.is_encrypted(getattr(args, attribute)):
                 logging.info("Enter passphrase for key")
                 password = getpass()
-            return func(args, password)
+            return func(self, args, password)
         return wrapper
     return decorator
 
@@ -37,25 +37,27 @@ class CliAdapter:
 
     @pinentry("key_id")
     def encrypt(self, args: Namespace, password: Optional[str] = None) -> None:
-        output_path = self.key_manager.encrypt(
-            args.file.name,
-            args.output_file,
-            args.key_id,
-            password,
-        )
-        logging.info("Successfully encrypted file")
-        logging.debug(f"Encrypted file: {output_path}")
+        for file in args.files:
+            output_path = self.key_manager.encrypt(
+                file.name,
+                args.output_file,
+                args.key_id,
+                password
+            )
+            logging.info("Successfully encrypted file")
+            logging.debug(f"Encrypted file: {output_path}")
 
     @pinentry("key_id")
     def decrypt(self, args: Namespace, password: Optional[str] = None) -> None:
-        output_path = self.key_manager.decrypt(
-            args.file.name,
-            args.output_file,
-            args.key_id,
-            password,
-        )
-        logging.info("Successfully decrypted file")
-        logging.debug(f"Decrypted file: {output_path}")
+        for file in args.files:
+            output_path = self.key_manager.decrypt(
+                file.name,
+                args.output_file,
+                args.key_id,
+                password,
+            )
+            logging.info("Successfully decrypted file")
+            logging.debug(f"Decrypted file: {output_path}")
 
     @pinentry("key_id")
     def sign(self, args: Namespace, password: Optional[str] = None) -> None:
@@ -65,7 +67,6 @@ class CliAdapter:
     def verify(self, args: Namespace, password: Optional[str] = None) -> None:
         pass
 
-    @pinentry("")
     def import_key(self, args: Namespace,
                    password: Optional[str] = None) -> None:
         if self.key_manager.is_encrypted(path=args.file.name):
@@ -78,9 +79,6 @@ class CliAdapter:
     @pinentry("id")
     def export_key(self, args: Namespace,
                    password: Optional[str] = None) -> None:
-        if self.key_manager.is_encrypted(args.id):
-            logging.info("Enter passphrase for key")
-            password = getpass()
         self.key_manager.export_key(args.id, args.public,
                                     args.output_file, password)
         logging.info("Successfully exported key")
