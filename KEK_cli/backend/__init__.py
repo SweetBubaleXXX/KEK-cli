@@ -182,6 +182,8 @@ class KeyManager:
                 key_bytes = self.__read_key(self.__get_key_path(id))
                 key_obj = self.__load_private_key(key_bytes, password)
                 if public:
+                    output_path = get_full_path(output_file or f"{id}.pub.kek",
+                                                work_dir)
                     return self.__save_key_to_file(output_path,
                                                    key_obj.public_key)
                 return self.__save_key_to_file(output_path, key_obj, password)
