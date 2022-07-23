@@ -37,6 +37,18 @@ class CliAdapter:
         self.key_manager = key_manager
 
     @exception_decorator
+    def list_keys(self, args: Namespace) -> None:
+        logging.info(f"Default: {self.key_manager.default_key}")
+        logging.info("Private: \n\t{}".format(
+            "\n\t".join(self.key_manager.private_keys)))
+        logging.info("Public: \n\t{}".format(
+            "\n".join(self.key_manager.public_keys)))
+
+    @exception_decorator
+    def set_default(self, args: Namespace) -> None:
+        self.key_manager.set_default(args.id)
+
+    @exception_decorator
     def generate(self, args: Namespace) -> None:
         logging.info(
             "Choose passphrase for key or leave empty for no passphrase")

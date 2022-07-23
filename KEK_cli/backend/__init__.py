@@ -95,6 +95,13 @@ class KeyManager:
             return True
         return False
 
+    def set_default(self, key_id: str) -> None:
+        if key_id in self.private_keys:
+            self.default_key = key_id
+            self.__write_config()
+        else:
+            logging.error("No such private key")
+
     def generate(self, key_size: int, password: Optional[str] = None) -> str:
         key = PrivateKEK.generate(key_size)
         key_id = self.__decode_key_id(key.key_id)

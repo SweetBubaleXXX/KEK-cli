@@ -30,6 +30,13 @@ subparsers = parser.add_subparsers(
     required=True
 )
 
+list_parser = subparsers.add_parser("list", help="list keys")
+list_parser.set_defaults(func=adapter.list_keys)
+
+default_key_parser = subparsers.add_parser("default",
+                                           help="set default private key")
+default_key_parser.set_defaults(func=adapter.set_default)
+
 generate_parser = subparsers.add_parser("generate", help="generate key")
 generate_parser.add_argument(
     "-s",
@@ -69,10 +76,6 @@ export_parser.add_argument(
     dest="public",
     help="export public key"
 )
-export_parser.add_argument(
-    "id",
-    type=str
-)
 export_parser.set_defaults(func=adapter.export_key)
 
 for subparser in [encrypt_parser, decrypt_parser, sign_parser, export_parser]:
@@ -91,6 +94,12 @@ for subparser in [encrypt_parser, decrypt_parser, sign_parser, verify_parser]:
         type=str,
         dest="key_id",
         help="id of a key to use"
+    )
+
+for subparser in [default_key_parser, export_parser]:
+    subparser.add_argument(
+        "id",
+        type=str
     )
 
 for subparser in [encrypt_parser, decrypt_parser, sign_parser, verify_parser]:
