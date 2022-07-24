@@ -1,11 +1,12 @@
 import logging
+import os
 import sys
 from argparse import Namespace
 from functools import wraps
 from getpass import getpass
 from typing import Callable, Optional
 
-from .backend import KeyManager
+from .backend import KeyManager, get_full_path
 
 
 def exception_decorator(func: Callable):
@@ -24,12 +25,19 @@ def pinentry(attribute: str):
     def decorator(func: Callable):
         @wraps(func)
         def wrapper(self, args: Namespace):
+            password = None
             if self.key_manager.is_encrypted(getattr(args, attribute)):
                 logging.info("Enter passphrase for key")
                 password = getpass()
             return func(self, args, password)
         return wrapper
     return decorator
+
+
+def should_overwrite(path: str) -> bool:
+    logging.info(f"File '{path}' exists")
+    answer = input("Overwrite? [Y/n] ")
+    return answer.strip() == "" or answer.lower() == "y"
 
 
 class CliAdapter:
@@ -65,6 +73,11 @@ class CliAdapter:
     @pinentry("key_id")
     def encrypt(self, args: Namespace, password: Optional[str] = None) -> None:
         for file in args.files:
+            if os.path.isfile(get_full_path(file.name)):
+                overwrite = should_overwrite(file.name)
+                if not overwrite:
+                    logging.debug(f"File '{file.name}' skipped")
+                    continue
             output_path = self.key_manager.encrypt(
                 file.name,
                 args.output_file,
