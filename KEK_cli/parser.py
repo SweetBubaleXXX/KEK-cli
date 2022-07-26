@@ -37,6 +37,10 @@ default_key_parser = subparsers.add_parser("default",
                                            help="set default private key")
 default_key_parser.set_defaults(func=adapter.set_default)
 
+delete_parser = subparsers.add_parser("delete",
+                                      help="delete key")
+delete_parser.set_defaults(func=adapter.delete_key)
+
 generate_parser = subparsers.add_parser("generate", help="generate key")
 generate_parser.add_argument(
     "-s",
@@ -103,7 +107,7 @@ for subparser in [encrypt_parser, decrypt_parser, sign_parser, verify_parser]:
         help="id of a key to use"
     )
 
-for subparser in [default_key_parser, export_parser]:
+for subparser in [delete_parser, default_key_parser, export_parser]:
     subparser.add_argument(
         "id",
         type=str

@@ -59,6 +59,11 @@ class CliAdapter:
         self.key_manager.set_default(args.id)
 
     @exception_decorator
+    def delete_key(self, args: Namespace) -> None:
+        self.key_manager.delete_key(args.id)
+        logging.info("Successfully deleted key")
+
+    @exception_decorator
     def generate(self, args: Namespace) -> None:
         logging.info(
             "Choose passphrase for key or leave empty for no passphrase")

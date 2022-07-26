@@ -1,8 +1,8 @@
-from genericpath import isfile
 import json
 import logging
 import os
-from typing import Callable, Optional, Union
+import random
+from typing import Optional, Union
 
 from KEK import exceptions
 from KEK.hybrid import PrivateKEK, PublicKEK
@@ -13,6 +13,16 @@ from .get_full_path import get_full_path
 class KeyManager:
     def __init__(self) -> None:
         self.__load_kek_dir()
+
+    @property
+    def default_key(self) -> Union[str, None]:
+        if not self._default_key:
+            logging.debug("No default key")
+        return self._default_key
+
+    @default_key.setter
+    def default_key(self, val: Union[str, None]):
+        self._default_key = val
 
     def __load_kek_dir(self) -> None:
         home_dir = os.path.expanduser("~")
@@ -56,7 +66,7 @@ class KeyManager:
 
     def __read_key(self, path: str) -> bytes:
         if not os.path.isfile(path):
-            logging.error("Key not found")
+            raise FileNotFoundError("Key not found")
         with open(path, "r") as f:
             return f.read().encode("ascii")
 
@@ -108,6 +118,24 @@ class KeyManager:
             self.__write_config()
         else:
             logging.error("No such private key")
+
+    def delete_key(self, key_id: str) -> None:
+        if key_id not in self.private_keys.union(self.public_keys):
+            raise FileNotFoundError("Key not found")
+        try:
+            os.remove(self.__get_key_path(key_id))
+        except OSError:
+            logging.debug("Key file not found")
+        if key_id.endswith(".pub"):
+            self.public_keys.remove(key_id)
+        else:
+            self.private_keys.remove(key_id)
+            if key_id == self.default_key:
+                default_key_id = random.choice(
+                    list(self.private_keys) or [None])
+                self.default_key = default_key_id
+                logging.debug(f"New default key id: {default_key_id}")
+        self.__write_config()
 
     def generate(self, key_size: int, password: Optional[str] = None) -> str:
         key = PrivateKEK.generate(key_size)
