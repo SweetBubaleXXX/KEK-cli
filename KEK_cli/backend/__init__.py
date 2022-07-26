@@ -1,7 +1,8 @@
+from genericpath import isfile
 import json
 import logging
 import os
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
 from KEK import exceptions
 from KEK.hybrid import PrivateKEK, PublicKEK
@@ -43,7 +44,10 @@ class KeyManager:
 
     def __save_key_to_file(self, path: str,
                            key_obj: Union[PrivateKEK, PublicKEK],
-                           password: Optional[str] = None) -> None:
+                           password: Optional[str] = None,
+                           overwrite: bool = True) -> None:
+        if not overwrite and os.path.isfile(path):
+            raise FileExistsError("File exists")
         if password:
             self.__write_key(
                 path, key_obj.serialize(self.__encode_password(password)))
@@ -64,7 +68,10 @@ class KeyManager:
         with open(path, "rb") as f:
             return f.read()
 
-    def __write_file(self, path: str, byte_data: bytes) -> None:
+    def __write_file(self, path: str, byte_data: bytes,
+                     overwrite: bool = False) -> None:
+        if not overwrite and os.path.isfile(path):
+            raise FileExistsError("File exists")
         with open(path, "wb") as f:
             f.write(byte_data)
 
@@ -113,8 +120,12 @@ class KeyManager:
         self.__write_config()
         return key_id
 
-    def encrypt(self, file: str, output_file: Optional[str] = None,
-                key_id: Optional[str] = None, password: Optional[str] = None,
+    def encrypt(self,
+                file: str,
+                output_file: Optional[str] = None,
+                key_id: Optional[str] = None,
+                password: Optional[str] = None,
+                overwrite: bool = False,
                 work_dir: Optional[str] = None) -> str:
         file_path = get_full_path(file, work_dir)
         if key_id and key_id.endswith(".pub"):
@@ -129,11 +140,15 @@ class KeyManager:
         output_path = get_full_path(output_file or default_filename, work_dir)
         if os.path.isdir(output_path):
             output_path = os.path.join(output_path, default_filename)
-        self.__write_file(output_path, encrypted_bytes)
+        self.__write_file(output_path, encrypted_bytes, overwrite)
         return output_path
 
-    def decrypt(self, file: str, output_file: Optional[str] = None,
-                key_id: Optional[str] = None, password: Optional[str] = None,
+    def decrypt(self,
+                file: str,
+                output_file: Optional[str] = None,
+                key_id: Optional[str] = None,
+                password: Optional[str] = None,
+                overwrite: bool = False,
                 work_dir: Optional[str] = None) -> str:
         file_path = get_full_path(file, work_dir)
         key = self.__load_private_key(
@@ -144,7 +159,7 @@ class KeyManager:
         output_path = get_full_path(output_file or default_filename, work_dir)
         if os.path.isdir(output_path):
             output_path = os.path.join(output_path, default_filename)
-        self.__write_file(output_path, decrypted_bytes)
+        self.__write_file(output_path, decrypted_bytes, overwrite)
         return output_path
 
     def sign(self):
@@ -172,9 +187,12 @@ class KeyManager:
             self.__write_config()
             return key_id
 
-    def export_key(self, id: str, public: Optional[bool] = False,
+    def export_key(self,
+                   id: str,
+                   public: Optional[bool] = False,
                    output_file: Optional[str] = None,
                    password: Optional[str] = None,
+                   overwrite: bool = False,
                    work_dir: Optional[str] = None) -> None:
         output_path = get_full_path(output_file or f"{id}.kek", work_dir)
         if id.endswith(".pub"):
@@ -183,7 +201,8 @@ class KeyManager:
                     continue
                 key_bytes = self.__read_key(self.__get_key_path(id))
                 key_obj = self.__load_public_key(key_bytes)
-                return self.__save_key_to_file(output_path, key_obj)
+                return self.__save_key_to_file(output_path, key_obj,
+                                               overwrite=overwrite)
         else:
             for key_id in self.private_keys:
                 if key_id != id:
@@ -194,5 +213,7 @@ class KeyManager:
                     output_path = get_full_path(output_file or f"{id}.pub.kek",
                                                 work_dir)
                     return self.__save_key_to_file(output_path,
-                                                   key_obj.public_key)
-                return self.__save_key_to_file(output_path, key_obj, password)
+                                                   key_obj.public_key,
+                                                   overwrite=overwrite)
+                return self.__save_key_to_file(output_path, key_obj,
+                                               password, overwrite)

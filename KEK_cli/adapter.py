@@ -18,6 +18,8 @@ def exception_decorator(func: Callable):
             err_type, value, traceback = sys.exc_info()
             logging.error(value)
             logging.debug(f"{err_type.__name__}: {traceback.tb_frame}")
+            if err_type == FileExistsError:
+                logging.info("To overwrite use '-r' option")
     return wrapper
 
 
@@ -37,7 +39,7 @@ def pinentry(attribute: str):
 def should_overwrite(path: str) -> bool:
     logging.info(f"File '{path}' exists")
     answer = input("Overwrite? [Y/n] ")
-    return answer.strip() == "" or answer.lower() == "y"
+    return not answer.strip() or answer.lower() == "y"
 
 
 class CliAdapter:
@@ -48,9 +50,9 @@ class CliAdapter:
     def list_keys(self, args: Namespace) -> None:
         logging.info(f"Default: {self.key_manager.default_key}")
         logging.info("Private: \n\t{}".format(
-            "\n\t".join(self.key_manager.private_keys)))
+            "\n\t".join(self.key_manager.private_keys) or "empty"))
         logging.info("Public: \n\t{}".format(
-            "\n".join(self.key_manager.public_keys)))
+            "\n\t".join(self.key_manager.public_keys) or "empty"))
 
     @exception_decorator
     def set_default(self, args: Namespace) -> None:
@@ -73,16 +75,19 @@ class CliAdapter:
     @pinentry("key_id")
     def encrypt(self, args: Namespace, password: Optional[str] = None) -> None:
         for file in args.files:
-            if os.path.isfile(get_full_path(file.name)):
-                overwrite = should_overwrite(file.name)
+            overwrite = args.overwrite
+            if (not overwrite and args.output_file and
+                    os.path.isfile(get_full_path(args.output_file))):
+                overwrite = should_overwrite(args.output_file)
                 if not overwrite:
-                    logging.debug(f"File '{file.name}' skipped")
+                    logging.debug(f"File '{args.output_file}' skipped")
                     continue
             output_path = self.key_manager.encrypt(
                 file.name,
                 args.output_file,
                 args.key_id,
-                password
+                password,
+                overwrite
             )
             logging.info("Successfully encrypted file")
             logging.debug(f"Encrypted file: {output_path}")
@@ -91,11 +96,19 @@ class CliAdapter:
     @pinentry("key_id")
     def decrypt(self, args: Namespace, password: Optional[str] = None) -> None:
         for file in args.files:
+            overwrite = args.overwrite
+            if (not overwrite and args.output_file and
+                    os.path.isfile(get_full_path(args.output_file))):
+                overwrite = should_overwrite(args.output_file)
+                if not overwrite:
+                    logging.debug(f"File '{args.output_file}' skipped")
+                    continue
             output_path = self.key_manager.decrypt(
                 file.name,
                 args.output_file,
                 args.key_id,
                 password,
+                overwrite
             )
             logging.info("Successfully decrypted file")
             logging.debug(f"Decrypted file: {output_path}")
@@ -125,5 +138,5 @@ class CliAdapter:
     def export_key(self, args: Namespace,
                    password: Optional[str] = None) -> None:
         self.key_manager.export_key(args.id, args.public,
-                                    args.output_file, password)
+                                    args.output_file, password, args.overwrite)
         logging.info("Successfully exported key")

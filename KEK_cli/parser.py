@@ -86,6 +86,13 @@ for subparser in [encrypt_parser, decrypt_parser, sign_parser, export_parser]:
         dest="output_file",
         metavar="FILENAME"
     )
+    subparser.add_argument(
+        "-r",
+        "--replace",
+        action="store_true",
+        dest="overwrite",
+        help="Overwrite file if exists"
+    )
 
 for subparser in [encrypt_parser, decrypt_parser, sign_parser, verify_parser]:
     subparser.add_argument(
