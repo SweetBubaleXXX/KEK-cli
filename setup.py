@@ -37,7 +37,7 @@ setup(name="gnukek-cli",
           ]
       },
       python_requires=">=3.7",
-      test_suite="tests",
+      # test_suite="tests",
       entry_points={
-        "console_scripts": ["kek=KEK_cli:main"]
+          "console_scripts": ["kek=KEK_cli:main"]
       })

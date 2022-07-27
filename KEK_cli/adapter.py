@@ -74,7 +74,7 @@ class CliAdapter:
                 return logging.error("Passwords don't match")
         id = self.key_manager.generate(args.key_size, password or None)
         logging.info("Successfully created new key")
-        logging.debug(f"Key id: {id}")
+        logging.info(f"Key id: {id}")
 
     @exception_decorator
     @pinentry("key_id")
@@ -121,12 +121,37 @@ class CliAdapter:
     @exception_decorator
     @pinentry("key_id")
     def sign(self, args: Namespace, password: Optional[str] = None) -> None:
-        pass
+        for file in args.files:
+            overwrite = args.overwrite
+            if (not overwrite and args.output_file and
+                    os.path.isfile(get_full_path(args.output_file))):
+                overwrite = should_overwrite(args.output_file)
+                if not overwrite:
+                    logging.debug(f"File '{args.output_file}' skipped")
+                    continue
+            output_path = self.key_manager.sign(
+                file.name,
+                args.output_file,
+                args.key_id,
+                password,
+                overwrite
+            )
+            logging.info("Successfully signed file")
+            logging.debug(f"Signature file: {output_path}")
 
     @exception_decorator
     @pinentry("key_id")
     def verify(self, args: Namespace, password: Optional[str] = None) -> None:
-        pass
+        verified = self.key_manager.verify(
+            args.signature.name,
+            args.file.name,
+            args.key_id,
+            password
+        )
+        if verified:
+            logging.info("Verified")
+        else:
+            logging.info("Verification failed")
 
     @exception_decorator
     def import_key(self, args: Namespace,

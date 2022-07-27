@@ -192,11 +192,45 @@ class KeyManager:
         self.__write_file(output_path, decrypted_bytes, overwrite)
         return output_path
 
-    def sign(self):
-        pass
+    def sign(self,
+             file: str,
+             output_file: Optional[str] = None,
+             key_id: Optional[str] = None,
+             password: Optional[str] = None,
+             overwrite: bool = False,
+             work_dir: Optional[str] = None) -> str:
+        file_path = get_full_path(file, work_dir)
+        key = self.__load_private_key(
+            self.__read_key(
+                self.__get_key_path(key_id or self.default_key)), password)
+        signature_bytes = key.sign(self.__read_file(file_path))
+        default_filename = f"{file}.kek"
+        output_path = get_full_path(output_file or default_filename, work_dir)
+        if os.path.isdir(output_path):
+            output_path = os.path.join(output_path, default_filename)
+        self.__write_file(output_path, signature_bytes.hex().encode("ascii"),
+                          overwrite)
+        return output_path
 
-    def verify(self):
-        pass
+    def verify(self,
+               signature_file: str,
+               file: str,
+               key_id: Optional[str] = None,
+               password: Optional[str] = None,
+               work_dir: Optional[str] = None) -> bool:
+        file_path = get_full_path(file, work_dir)
+        signature_path = get_full_path(signature_file, work_dir)
+        if key_id and key_id.endswith(".pub"):
+            key = self.__load_public_key(
+                self.__read_key(self.__get_key_path(key_id)))
+        else:
+            key = self.__load_private_key(
+                self.__read_key(
+                    self.__get_key_path(key_id or self.default_key)), password)
+        signature_bytes = bytes.fromhex(
+            self.__read_file(signature_path).decode("ascii").strip())
+        file_bytes = self.__read_file(file_path)
+        return key.verify(signature_bytes, file_bytes)
 
     def import_key(self, file: str, password: Optional[str] = None,
                    work_dir: Optional[str] = None) -> str:
