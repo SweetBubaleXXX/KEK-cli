@@ -22,7 +22,7 @@ setup(name="gnukek-cli",
           "Programming Language :: Python :: 3",
           "Operating System :: OS Independent",
       ],
-      packages=find_packages(include=["KEK_cli"]),
+      packages=find_packages(include=["KEK_cli*"]),
       install_requires=[
           "gnukek==1.0.0b3",
       ],
