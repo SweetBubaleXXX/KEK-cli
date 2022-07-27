@@ -6,6 +6,8 @@ from functools import wraps
 from getpass import getpass
 from typing import Callable, Optional
 
+from KEK.hybrid import PrivateKEK
+
 from .backend import KeyManager, get_full_path
 
 
@@ -45,6 +47,13 @@ def should_overwrite(path: str) -> bool:
 class CliAdapter:
     def __init__(self, key_manager: KeyManager) -> None:
         self.key_manager = key_manager
+
+    @exception_decorator
+    def info(self, args: Namespace) -> None:
+        logging.info(f"KEK algorithm version: {PrivateKEK.version}")
+        logging.info(f"Encryption algorithm: {PrivateKEK.algorithm}")
+        logging.info(f"Avaliable key sizes: {PrivateKEK.key_sizes}")
+        logging.info(f"Config location: {self.key_manager.config_path}")
 
     @exception_decorator
     def list_keys(self, args: Namespace) -> None:

@@ -30,6 +30,10 @@ subparsers = parser.add_subparsers(
     required=True
 )
 
+info_parser = subparsers.add_parser("info",
+                                    help="show info about KEK algorithm")
+info_parser.set_defaults(func=adapter.info)
+
 list_parser = subparsers.add_parser("list", help="list keys")
 list_parser.set_defaults(func=adapter.list_keys)
 
