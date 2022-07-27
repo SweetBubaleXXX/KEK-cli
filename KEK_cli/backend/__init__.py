@@ -29,6 +29,7 @@ class KeyManager:
         self.kek_dir = os.path.join(home_dir, ".kek")
         if not os.path.isdir(self.kek_dir):
             os.mkdir(self.kek_dir)
+            os.chmod(self.kek_dir, 0o700)
         self.__load_config()
 
     def __load_config(self) -> None:
@@ -65,6 +66,7 @@ class KeyManager:
                 path, key_obj.serialize(self.__encode_password(password)))
         else:
             self.__write_key(path, key_obj.serialize())
+        os.chmod(path, 0o600)
 
     def __read_key(self, path: str) -> bytes:
         if not os.path.isfile(path):
