@@ -49,7 +49,9 @@ class KeyManager:
                 "public": list(self.public_keys)
             }, f, indent=2)
 
-    def __get_key_path(self, id: str) -> str:
+    def __get_key_path(self, id: Union[str, None]) -> str:
+        if id is None:
+            raise FileNotFoundError("Key not found")
         return get_full_path(f"{id}.kek", self.kek_dir)
 
     def __save_key_to_file(self, path: str,
