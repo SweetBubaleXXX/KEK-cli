@@ -1,14 +1,13 @@
 import logging
 import os
 import sys
+import traceback
 from argparse import Namespace
 from functools import wraps
 from getpass import getpass
 from typing import Callable, Optional
 
-from KEK.hybrid import PrivateKEK
-
-from .backend import KeyManager, get_full_path
+from .backend import KeyManager
 
 
 def exception_decorator(func: Callable):
@@ -17,9 +16,9 @@ def exception_decorator(func: Callable):
         try:
             func(*args, **kwargs)
         except Exception:
-            err_type, value, traceback = sys.exc_info()
+            err_type, value = sys.exc_info()[:2]
             logging.error(value)
-            logging.debug(f"{err_type.__name__}: {traceback.tb_frame}")
+            logging.debug(traceback.format_exc())
             if err_type == FileExistsError:
                 logging.info("To overwrite use '-r' option")
     return wrapper
@@ -38,21 +37,42 @@ def pinentry(attribute: str):
     return decorator
 
 
-def should_overwrite(path: str) -> bool:
-    logging.info(f"File '{path}' exists")
-    answer = input("Overwrite? [Y/n] ")
-    return not answer.strip() or answer.lower() == "y"
-
-
 class CliAdapter:
     def __init__(self, key_manager: KeyManager) -> None:
         self.key_manager = key_manager
 
+    def __should_overwrite(self, path: str) -> bool:
+        logging.info(f"File '{path}' exists")
+        answer = input("Overwrite? [Y/n] ")
+        return not answer.strip() or answer.lower() == "y"
+
+    def __multifile_operation(self, callback: Callable, args: Namespace,
+                              password: Optional[str] = None,
+                              success_message: Optional[str] = None):
+        for file in args.files:
+            overwrite = args.overwrite
+            if (not overwrite and args.output_file and
+                    os.path.isfile(KeyManager.get_full_path(args.output_file))):
+                overwrite = self.__should_overwrite(args.output_file)
+                if not overwrite:
+                    logging.debug(f"File '{args.output_file}' skipped")
+                    continue
+            output_path = callback(
+                file.name,
+                args.output_file,
+                args.key_id,
+                password,
+                overwrite
+            )
+            if success_message:
+                logging.info(success_message)
+            logging.debug(f"Output file: {output_path}")
+
     @exception_decorator
     def info(self, args: Namespace) -> None:
-        logging.info(f"KEK algorithm version: {PrivateKEK.version}")
-        logging.info(f"Encryption algorithm: {PrivateKEK.algorithm}")
-        logging.info(f"Avaliable key sizes: {PrivateKEK.key_sizes}")
+        logging.info(f"KEK algorithm version: {KeyManager.KEK_version}")
+        logging.info(f"Encryption algorithm: {KeyManager.KEK_algorithm}")
+        logging.info(f"Avaliable key sizes: {KeyManager.KEK_key_sizes}")
         logging.info(f"Config location: {self.key_manager.config_path}")
 
     @exception_decorator
@@ -88,65 +108,20 @@ class CliAdapter:
     @exception_decorator
     @pinentry("key_id")
     def encrypt(self, args: Namespace, password: Optional[str] = None) -> None:
-        for file in args.files:
-            overwrite = args.overwrite
-            if (not overwrite and args.output_file and
-                    os.path.isfile(get_full_path(args.output_file))):
-                overwrite = should_overwrite(args.output_file)
-                if not overwrite:
-                    logging.debug(f"File '{args.output_file}' skipped")
-                    continue
-            output_path = self.key_manager.encrypt(
-                file.name,
-                args.output_file,
-                args.key_id,
-                password,
-                overwrite
-            )
-            logging.info("Successfully encrypted file")
-            logging.debug(f"Encrypted file: {output_path}")
+        self.__multifile_operation(self.key_manager.encrypt, args,
+                                   password, "Successfully encrypted file")
 
     @exception_decorator
     @pinentry("key_id")
     def decrypt(self, args: Namespace, password: Optional[str] = None) -> None:
-        for file in args.files:
-            overwrite = args.overwrite
-            if (not overwrite and args.output_file and
-                    os.path.isfile(get_full_path(args.output_file))):
-                overwrite = should_overwrite(args.output_file)
-                if not overwrite:
-                    logging.debug(f"File '{args.output_file}' skipped")
-                    continue
-            output_path = self.key_manager.decrypt(
-                file.name,
-                args.output_file,
-                args.key_id,
-                password,
-                overwrite
-            )
-            logging.info("Successfully decrypted file")
-            logging.debug(f"Decrypted file: {output_path}")
+        self.__multifile_operation(self.key_manager.decrypt, args,
+                                   password, "Successfully decrypted file")
 
     @exception_decorator
     @pinentry("key_id")
     def sign(self, args: Namespace, password: Optional[str] = None) -> None:
-        for file in args.files:
-            overwrite = args.overwrite
-            if (not overwrite and args.output_file and
-                    os.path.isfile(get_full_path(args.output_file))):
-                overwrite = should_overwrite(args.output_file)
-                if not overwrite:
-                    logging.debug(f"File '{args.output_file}' skipped")
-                    continue
-            output_path = self.key_manager.sign(
-                file.name,
-                args.output_file,
-                args.key_id,
-                password,
-                overwrite
-            )
-            logging.info("Successfully signed file")
-            logging.debug(f"Signature file: {output_path}")
+        self.__multifile_operation(self.key_manager.sign, args,
+                                   password, "Successfully signed file")
 
     @exception_decorator
     @pinentry("key_id")

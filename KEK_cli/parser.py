@@ -1,6 +1,6 @@
 import argparse
 
-from KEK.hybrid import PrivateKEK
+from KEK_cli.backend import KeyManager
 
 from ._version import __version__
 from .key_manager import key_manager
@@ -49,11 +49,11 @@ generate_parser = subparsers.add_parser("generate", help="generate key")
 generate_parser.add_argument(
     "-s",
     "--size",
-    default=PrivateKEK.default_size,
+    default=KeyManager.KEK_default_size,
     type=int,
-    choices=PrivateKEK.key_sizes,
+    choices=KeyManager.KEK_key_sizes,
     dest="key_size",
-    help=f"size of a key, default - {PrivateKEK.default_size}",
+    help=f"size of a key, default - {KeyManager.KEK_default_size}",
 )
 generate_parser.set_defaults(func=adapter.generate)
 
