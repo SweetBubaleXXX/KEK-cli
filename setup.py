@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(name="gnukek-cli",
-      version="0.2.1",
+      version="0.2.2",
       author="SweetBubaleXXX",
       license="GNU General Public License v3.0",
       description="Kinetic Effective Key CLI",
@@ -37,7 +37,6 @@ setup(name="gnukek-cli",
           ]
       },
       python_requires=">=3.7",
-      # test_suite="tests",
       entry_points={
           "console_scripts": ["kek=KEK_cli:main"]
       })
