@@ -4,10 +4,10 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(name="gnukek-cli",
-      version="0.2.2",
+      version="0.3.0",
       author="SweetBubaleXXX",
       license="GNU General Public License v3.0",
-      description="Kinetic Effective Key CLI",
+      description="Kinetic Encryption Key CLI",
       long_description=long_description,
       long_description_content_type="text/markdown",
       url="https://github.com/SweetBubaleXXX/KEK-cli",
@@ -24,12 +24,13 @@ setup(name="gnukek-cli",
       ],
       packages=find_packages(include=["KEK_cli*"]),
       install_requires=[
-          "gnukek==1.0.0b3",
+          "gnukek==1.0.0b5",
       ],
       extras_require={
           "dev": [
               "mypy",
-              "pycodestyle"
+              "pycodestyle",
+              "pylint"
           ],
           "build": [
               "build",

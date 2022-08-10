@@ -8,6 +8,130 @@ from KEK import exceptions
 from KEK.hybrid import PrivateKEK, PublicKEK
 
 
+class KeyStorage:
+    directory_permissions = 0o700
+    key_file_permissions = 0o600
+    config_filename = "config.json"
+    password_encoding = "ascii"
+
+    def __init__(self, location: str) -> None:
+        if not os.path.isabs(location):
+            raise ValueError(
+                "Invalid storage location. Must be absolute path."
+            )
+        self._location = location
+        self._default_key: Union[str, None] = None
+        self._private_keys = set()
+        self._public_keys = set()
+        self._key_objects = {}
+        self.__load_directory()
+
+    def __load_directory(self) -> None:
+        if not os.path.isdir(self._location):
+            os.mkdir(self._location)
+            os.chmod(self._location, self.directory_permissions)
+        self.__load_config()
+
+    def __load_config(self) -> None:
+        self.config_path = os.path.join(self._location, self.config_filename)
+        config = {}
+        if os.path.isfile(self.config_path):
+            with open(self.config_path, "r") as f:
+                config = json.load(f)
+        self._default_key = config.get("default", None)
+        self._private_keys = set(config.get("private", []))
+        self._public_keys = set(config.get("public", []))
+
+    def __write_config(self) -> None:
+        with open(self.config_path, "w") as config_file:
+            json.dump({
+                "default": self._default_key,
+                "private": list(self._private_keys),
+                "public": list(self._public_keys)
+            }, config_file, indent=2)
+            logging.debug("Config file written")
+
+    def __get_key_path(self, key_id: str) -> str:
+        return os.path.join(self._location, f"{key_id}.kek")
+
+    def __read_key(self, key_id: str) -> bytes:
+        key_path = self.__get_key_path(key_id)
+        if not os.path.isfile(key_path):
+            raise FileNotFoundError("Key not found")
+        with open(key_path, "rb") as key_file:
+            return key_file.read()
+
+    def __write_key(self, key_id: str, serialized_bytes: bytes) -> None:
+        key_path = self.__get_key_path(key_id)
+        with open(key_path, "wb") as key_file:
+            key_file.write(serialized_bytes)
+
+    def __load_key(
+        self,
+        key_id: str,
+        password: Optional[str] = None
+    ) -> Union[PrivateKEK, PublicKEK]:
+        key_bytes = self.__read_key(key_id)
+        if key_id.endswith(".pub"):
+            return PublicKEK.load(key_bytes)
+        else:
+            return PrivateKEK.load(key_bytes, self.encode_password(password))
+
+    def __decode_key_id(self, byte_id: bytes) -> str:
+        return byte_id.hex()
+
+    @property
+    def default_key(self) -> Union[str, None]:
+        if not self._default_key:
+            logging.debug("No default key")
+        return self._default_key
+
+    @default_key.setter
+    def default_key(self, key_id: Union[str, None]):
+        if key_id not in self._private_keys:
+            raise ValueError("No such private key")
+        self._default_key = key_id
+
+    @classmethod
+    def encode_password(
+        cls,
+        password: Union[str, None]
+    ) -> Union[bytes, None]:
+        if password is not None:
+            return password.encode(cls.password_encoding)
+        return password
+
+    def get(
+        self,
+        key_id: str,
+        password: Optional[str] = None
+    ) -> Union[PrivateKEK, PublicKEK, None]:
+        if key_id not in self._private_keys.union(self._public_keys):
+            logging.error(f"Key '{key_id}' not found")
+            return None
+        if key_id not in self._key_objects:
+            key_object = self.__load_key(key_id, password)
+            self._key_objects[key_id] = key_object
+        return self._key_objects[key_id]
+
+    def add(
+        self,
+        key_object: Union[PrivateKEK, PublicKEK],
+        password: Optional[str] = None
+    ) -> str:
+        key_id = self.__decode_key_id(key_object.key_id)
+        if isinstance(key_object, PublicKEK):
+            key_id = "".join((key_id, ".pub"))
+            self._public_keys.add(key_id)
+        else:
+            self._private_keys.add(key_id)
+            self._default_key = self._default_key or key_id
+        self._key_objects[key_id] = key_object
+        encoded_password = self.encode_password(password)
+        self.__write_key(key_id, key_object.serialize(encoded_password))
+        self.__write_config()
+
+
 class KeyManager:
     KEK_version = PrivateKEK.version
     KEK_algorithm = PrivateKEK.algorithm
@@ -17,8 +141,9 @@ class KeyManager:
     home_dir_permissions = 0o700
     key_file_permissions = 0o600
 
-    def __init__(self) -> None:
-        self.__load_kek_dir()
+    def __init__(self, kek_dir_path: Optional[str] = None) -> None:
+        self.__load_kek_dir(kek_dir_path)
+        self.__load_config()
 
     @property
     def default_key(self) -> Union[str, None]:
@@ -37,14 +162,16 @@ class KeyManager:
             work_dir = os.getcwd()
         return os.path.abspath(os.path.join(work_dir, file))
 
-    def __load_kek_dir(self) -> None:
+    def __load_kek_dir(self, kek_dir_path: Optional[str] = None) -> None:
         """Find or create home directory and load config."""
-        home_dir = os.path.expanduser("~")
-        self.kek_dir = os.path.join(home_dir, ".kek")
+        if kek_dir_path and os.path.isabs(kek_dir_path):
+            self.kek_dir = kek_dir_path
+        else:
+            home_dir = os.path.expanduser("~")
+            self.kek_dir = os.path.join(home_dir, ".kek")
         if not os.path.isdir(self.kek_dir):
             os.mkdir(self.kek_dir)
             os.chmod(self.kek_dir, self.home_dir_permissions)
-        self.__load_config()
 
     def __load_config(self) -> None:
         """Read config file."""
