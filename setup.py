@@ -24,7 +24,7 @@ setup(name="gnukek-cli",
       ],
       packages=find_packages(include=["KEK_cli*"]),
       install_requires=[
-          "gnukek==1.0.0b5",
+          "gnukek==1.0.0b6",
       ],
       extras_require={
           "dev": [

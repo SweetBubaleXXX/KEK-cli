@@ -40,6 +40,43 @@ class BaseFile:
             return file.write(byte_data)
 
 
+class KeyFile(BaseFile):
+    def __init__(self, path: str) -> None:
+        super().__init__(path)
+
+    @property
+    def is_encrypted(self) -> bool:
+        return PrivateKEK.is_encrypted(self.read())
+
+    @property
+    def is_public(self) -> bool:
+        return self.__is_public(self.read())
+
+    def __is_public(self, serialized_key: bytes) -> bool:
+        first_line = serialized_key.strip().splitlines()[0]
+        return first_line == PublicKEK.first_line
+
+    def load(
+        self,
+        password: Optional[bytes] = None
+    ) -> Union[PrivateKEK, PublicKEK]:
+        serialized_key = self.read()
+        if self.__is_public(serialized_key):
+            return PublicKEK.load(serialized_key)
+        return PrivateKEK.load(serialized_key, password)
+
+    def export(
+        self,
+        key_object: Union[PrivateKEK, PublicKEK],
+        password: Optional[bytes] = None
+    ) -> int:
+        if isinstance(key_object, PublicKEK):
+            serialized_key = key_object.serialize()
+        else:
+            serialized_key = key_object.serialize(password)
+        return self.write(serialized_key)
+
+
 class File(BaseFile):
     def __init__(self, path: str, overwritable=False) -> None:
         super().__init__(path)
@@ -101,6 +138,7 @@ class KeyStorage:
                 "Invalid storage location. Must be absolute path."
             )
         self._location = location
+        self._config_path: os.path.join(self._location, self.config_filename)
         self._default_key: Union[str, None] = None
         self._private_keys = set()
         self._public_keys = set()
@@ -114,17 +152,16 @@ class KeyStorage:
         self.__load_config()
 
     def __load_config(self) -> None:
-        self.config_path = os.path.join(self._location, self.config_filename)
         config = {}
-        if os.path.isfile(self.config_path):
-            with open(self.config_path, "r") as f:
-                config = json.load(f)
+        if os.path.isfile(self._config_path):
+            with open(self._config_path, "r") as config_file:
+                config = json.load(config_file)
         self._default_key = config.get("default", None)
         self._private_keys = set(config.get("private", []))
         self._public_keys = set(config.get("public", []))
 
     def __write_config(self) -> None:
-        with open(self.config_path, "w") as config_file:
+        with open(self._config_path, "w") as config_file:
             json.dump({
                 "default": self._default_key,
                 "private": list(self._private_keys),
@@ -132,19 +169,44 @@ class KeyStorage:
             }, config_file, indent=2)
             logging.debug("Config file written")
 
-    def __get_key_path(self, key_id: str) -> str:
-        return os.path.join(self._location, f"{key_id}.kek")
+    def __add_public_key(self, key_object: PublicKEK, key_id: str) -> str:
+        key_id = "".join((key_id, ".pub"))
+        self._public_keys.add(key_id)
+        self.__write_key(key_id, key_object.serialize())
+        return key_id
+
+    def __add_private_key(
+        self,
+        key_object: PrivateKEK,
+        key_id: str,
+        password: Optional[str] = None,
+    ):
+        self._private_keys.add(key_id)
+        self._default_key = self._default_key or key_id
+        encoded_password = self.encode_password(password)
+        self.__write_key(key_id, key_object.serialize(encoded_password))
 
     def __load_key(
         self,
         key_id: str,
         password: Optional[str] = None
     ) -> Union[PrivateKEK, PublicKEK]:
-        key_bytes = self.read_key(key_id)
-        if key_id.endswith(".pub"):
-            return PublicKEK.load(key_bytes)
-        else:
-            return PrivateKEK.load(key_bytes, self.encode_password(password))
+        key_file = self.__read_key(key_id)
+        return key_file.load(self.encode_password(password))
+
+    def __read_key(self, key_id: str) -> KeyFile:
+        key_path = self.__get_key_path(key_id)
+        if not os.path.isfile(key_path):
+            raise FileNotFoundError(f"Key '{key_id}' not found")
+        return KeyFile(key_path)
+
+    def __write_key(self, key_id: str, serialized_bytes: bytes) -> None:
+        key_path = self.__get_key_path(key_id)
+        key_file = KeyFile(key_path)
+        key_file.write(serialized_bytes)
+
+    def __get_key_path(self, key_id: str) -> str:
+        return os.path.join(self._location, f"{key_id}.kek")
 
     def __decode_key_id(self, byte_id: bytes) -> str:
         return byte_id.hex()
@@ -170,17 +232,19 @@ class KeyStorage:
             return password.encode(cls.password_encoding)
         return password
 
-    def read_key(self, key_id: str) -> bytes:
-        key_path = self.__get_key_path(key_id)
-        if not os.path.isfile(key_path):
-            raise FileNotFoundError(f"Key '{key_id}' not found")
-        with open(key_path, "rb") as key_file:
-            return key_file.read()
-
-    def write_key(self, key_id: str, serialized_bytes: bytes) -> None:
-        key_path = self.__get_key_path(key_id)
-        with open(key_path, "wb") as key_file:
-            key_file.write(serialized_bytes)
+    def add(
+        self,
+        key_object: Union[PrivateKEK, PublicKEK],
+        password: Optional[str] = None
+    ) -> str:
+        key_id = self.__decode_key_id(key_object.key_id)
+        if isinstance(key_object, PublicKEK):
+            key_id = self.__add_public_key(key_object, key_id)
+        else:
+            self.__add_private_key(key_object, key_id, password)
+        self._key_objects[key_id] = key_object
+        self.__write_config()
+        return key_id
 
     def get(
         self,
@@ -190,29 +254,11 @@ class KeyStorage:
         key_id = key_id or self.default_key
         all_keys = self._private_keys.union(self._public_keys)
         if not key_id and key_id not in all_keys:
-            raise ValueError(f"Key not found")
+            raise ValueError("Key not found")
         if key_id not in self._key_objects:
             key_object = self.__load_key(key_id, password)
             self._key_objects[key_id] = key_object
         return self._key_objects[key_id]
-
-    def add(
-        self,
-        key_object: Union[PrivateKEK, PublicKEK],
-        password: Optional[str] = None
-    ) -> str:
-        key_id = self.__decode_key_id(key_object.key_id)
-        if isinstance(key_object, PublicKEK):
-            key_id = "".join((key_id, ".pub"))
-            self._public_keys.add(key_id)
-        else:
-            self._private_keys.add(key_id)
-            self._default_key = self._default_key or key_id
-        self._key_objects[key_id] = key_object
-        encoded_password = self.encode_password(password)
-        self.write_key(key_id, key_object.serialize(encoded_password))
-        self.__write_config()
-        return key_id
 
 
 class KeyManager:
