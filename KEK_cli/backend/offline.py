@@ -8,6 +8,87 @@ from KEK import exceptions
 from KEK.hybrid import PrivateKEK, PublicKEK
 
 
+class BaseFile:
+    def __init__(self, path: str) -> None:
+        if os.path.isdir(path):
+            raise IsADirectoryError("Can't open file because it's a directory")
+        self._path = path
+        self._parent_folder, self._filename = os.path.split(path)
+
+    @property
+    def path(self) -> str:
+        return self._path
+
+    @property
+    def parent_folder(self) -> str:
+        return self._parent_folder
+
+    @property
+    def filename(self) -> str:
+        return self._filename
+
+    @property
+    def exists(self) -> bool:
+        return os.path.isfile(self._path)
+
+    def read(self, number_of_bytes: Optional[int] = None) -> bytes:
+        with open(self._path, "rb") as file:
+            return file.read(number_of_bytes)
+
+    def write(self, byte_data: bytes) -> int:
+        with open(self._path, "wb") as file:
+            return file.write(byte_data)
+
+
+class File(BaseFile):
+    def __init__(self, path: str, overwritable=False) -> None:
+        super().__init__(path)
+        self.overwritable = overwritable
+
+    @property
+    def output_filename(self) -> str:
+        return f"{self._filename}.kek"
+
+    def write(self, byte_data: bytes) -> int:
+        if not self.overwritable and self.exists:
+            raise FileExistsError(
+                "Can't write file because it is already exists"
+            )
+        return super().write(byte_data)
+
+    def encrypt(self, key_object: Union[PrivateKEK, PublicKEK]) -> bytes:
+        return key_object.encrypt(self.read())
+
+    def sign(self, key_object: PrivateKEK) -> bytes:
+        return key_object.sign(self.read())
+
+
+class EncryptedFile(File):
+    def __init__(self, path: str, overwritable=False) -> None:
+        super().__init__(path, overwritable)
+
+    @property
+    def output_filename(self) -> str:
+        if len(self._filename) > 4 and self._filename.endswith(".kek"):
+            return self._filename[:-4]
+        return self._filename
+
+    def decrypt(self, key_object: PrivateKEK) -> bytes:
+        return key_object.decrypt(self.read())
+
+
+class SignatureFile(File):
+    def __init__(self, path: str, overwritable=False) -> None:
+        super().__init__(path, overwritable)
+
+    def verify(
+        self,
+        key_object: Union[PrivateKEK, PublicKEK],
+        original_data: bytes
+    ) -> bool:
+        return key_object.verify(self.read(), original_data)
+
+
 class KeyStorage:
     directory_permissions = 0o700
     key_file_permissions = 0o600
@@ -54,24 +135,12 @@ class KeyStorage:
     def __get_key_path(self, key_id: str) -> str:
         return os.path.join(self._location, f"{key_id}.kek")
 
-    def __read_key(self, key_id: str) -> bytes:
-        key_path = self.__get_key_path(key_id)
-        if not os.path.isfile(key_path):
-            raise FileNotFoundError("Key not found")
-        with open(key_path, "rb") as key_file:
-            return key_file.read()
-
-    def __write_key(self, key_id: str, serialized_bytes: bytes) -> None:
-        key_path = self.__get_key_path(key_id)
-        with open(key_path, "wb") as key_file:
-            key_file.write(serialized_bytes)
-
     def __load_key(
         self,
         key_id: str,
         password: Optional[str] = None
     ) -> Union[PrivateKEK, PublicKEK]:
-        key_bytes = self.__read_key(key_id)
+        key_bytes = self.read_key(key_id)
         if key_id.endswith(".pub"):
             return PublicKEK.load(key_bytes)
         else:
@@ -101,14 +170,27 @@ class KeyStorage:
             return password.encode(cls.password_encoding)
         return password
 
+    def read_key(self, key_id: str) -> bytes:
+        key_path = self.__get_key_path(key_id)
+        if not os.path.isfile(key_path):
+            raise FileNotFoundError(f"Key '{key_id}' not found")
+        with open(key_path, "rb") as key_file:
+            return key_file.read()
+
+    def write_key(self, key_id: str, serialized_bytes: bytes) -> None:
+        key_path = self.__get_key_path(key_id)
+        with open(key_path, "wb") as key_file:
+            key_file.write(serialized_bytes)
+
     def get(
         self,
-        key_id: str,
+        key_id: Optional[str] = None,
         password: Optional[str] = None
-    ) -> Union[PrivateKEK, PublicKEK, None]:
-        if key_id not in self._private_keys.union(self._public_keys):
-            logging.error(f"Key '{key_id}' not found")
-            return None
+    ) -> Union[PrivateKEK, PublicKEK]:
+        key_id = key_id or self.default_key
+        all_keys = self._private_keys.union(self._public_keys)
+        if not key_id and key_id not in all_keys:
+            raise ValueError(f"Key not found")
         if key_id not in self._key_objects:
             key_object = self.__load_key(key_id, password)
             self._key_objects[key_id] = key_object
@@ -128,8 +210,9 @@ class KeyStorage:
             self._default_key = self._default_key or key_id
         self._key_objects[key_id] = key_object
         encoded_password = self.encode_password(password)
-        self.__write_key(key_id, key_object.serialize(encoded_password))
+        self.write_key(key_id, key_object.serialize(encoded_password))
         self.__write_config()
+        return key_id
 
 
 class KeyManager:
@@ -137,159 +220,47 @@ class KeyManager:
     KEK_algorithm = PrivateKEK.algorithm
     KEK_key_sizes = PrivateKEK.key_sizes
     KEK_default_size = PrivateKEK.default_size
-    encoding = "ascii"
-    home_dir_permissions = 0o700
-    key_file_permissions = 0o600
+    default_storage_location = "~/.kek"
 
-    def __init__(self, kek_dir_path: Optional[str] = None) -> None:
-        self.__load_kek_dir(kek_dir_path)
-        self.__load_config()
+    def __init__(
+        self,
+        storage_location: Optional[str] = None,
+        work_dir: Optional[str] = None
+    ) -> None:
+        self.storage_location = os.path.expanduser(
+            storage_location
+            or self.default_storage_location
+        )
+        self.key_storage = KeyStorage(self.storage_location)
+        self.work_dir = work_dir or os.getcwd()
 
-    @property
-    def default_key(self) -> Union[str, None]:
-        """Id of a default key."""
-        if not self._default_key:
-            logging.debug("No default key")
-        return self._default_key
-
-    @default_key.setter
-    def default_key(self, value: Union[str, None]):
-        self._default_key = value
-
-    @staticmethod
-    def get_full_path(file: str, work_dir: Optional[str] = None) -> str:
-        if not work_dir:
-            work_dir = os.getcwd()
-        return os.path.abspath(os.path.join(work_dir, file))
-
-    def __load_kek_dir(self, kek_dir_path: Optional[str] = None) -> None:
-        """Find or create home directory and load config."""
-        if kek_dir_path and os.path.isabs(kek_dir_path):
-            self.kek_dir = kek_dir_path
-        else:
-            home_dir = os.path.expanduser("~")
-            self.kek_dir = os.path.join(home_dir, ".kek")
-        if not os.path.isdir(self.kek_dir):
-            os.mkdir(self.kek_dir)
-            os.chmod(self.kek_dir, self.home_dir_permissions)
-
-    def __load_config(self) -> None:
-        """Read config file."""
-        self.config_path = os.path.join(self.kek_dir, "config.json")
-        config = {}
-        if os.path.isfile(self.config_path):
-            with open(self.config_path, "r") as f:
-                config = json.load(f)
-        self.default_key = config.get("default", None)
-        self.private_keys = set(config.get("private", []))
-        self.public_keys = set(config.get("public", []))
-
-    def __write_config(self) -> None:
-        """Write config to file in home directory."""
-        with open(self.config_path, "w") as f:
-            json.dump({
-                "default": self.default_key,
-                "private": list(self.private_keys),
-                "public": list(self.public_keys)
-            }, f, indent=2)
-            logging.debug("Config file written")
-
-    def __get_key_path(self, id: Union[str, None]) -> str:
-        """Get path of key by id."""
-        if id is None:
-            raise FileNotFoundError("Key not found")
-        return self.get_full_path(f"{id}.kek", self.kek_dir)
-
-    def __save_key_to_file(self, path: str,
-                           key_obj: Union[PrivateKEK, PublicKEK],
-                           password: Optional[str] = None,
-                           overwrite: bool = True) -> None:
-        """Write serialized key to file."""
-        if not overwrite and os.path.isfile(path):
-            raise FileExistsError("File exists")
-        if password:
-            self.__write_key(
-                path, key_obj.serialize(self.__encode_password(password)))
-        else:
-            self.__write_key(path, key_obj.serialize())
-        os.chmod(path, self.key_file_permissions)
-
-    def __read_key(self, path: str) -> bytes:
-        """Get key bytes from file."""
-        if not os.path.isfile(path):
-            raise FileNotFoundError("Key not found")
-        with open(path, "r") as f:
-            return f.read().encode(self.encoding)
-
-    def __write_key(self, path: str, serialized_bytes: bytes) -> None:
-        """Write serialized key bytes to file."""
-        with open(path, "w") as f:
-            f.write(serialized_bytes.decode(self.encoding))
+    def get_full_path(self, *paths: str) -> str:
+        return os.path.abspath(
+            os.path.expanduser(
+                os.path.join(self.work_dir, *paths)
+            )
+        )
 
     def __read_file(self, path: str) -> bytes:
-        """Read file bytes."""
         with open(path, "rb") as f:
             return f.read()
 
-    def __write_file(self, path: str, byte_data: bytes,
-                     overwrite: bool = False) -> None:
-        """Write bytes to file."""
+    def __write_file(
+        self,
+        path: str, byte_data: bytes,
+        overwrite: bool = False
+    ) -> None:
         if not overwrite and os.path.isfile(path):
             raise FileExistsError("File exists")
         with open(path, "wb") as f:
             f.write(byte_data)
 
-    def __load_private_key(self, serialized_bytes: bytes,
-                           password: Optional[str] = None) -> PrivateKEK:
-        """Get PrivateKEK object from serialized bytes."""
-        return PrivateKEK.load(serialized_bytes,
-                               self.__encode_password(password))
-
-    def __load_public_key(self, serialized_bytes: bytes) -> PublicKEK:
-        """Get PublicKEK object from serialized bytes."""
-        return PublicKEK.load(serialized_bytes)
-
-    def __load_key_by_id(self, key_id: Optional[str],
-                         password: Optional[str] = None) -> Union[PrivateKEK,
-                                                                  PublicKEK]:
-        """Get key object by id."""
-        if key_id and key_id.endswith(".pub"):
-            return self.__load_public_key(
-                self.__read_key(self.__get_key_path(key_id)))
-        else:
-            return self.__load_private_key(
-                self.__read_key(
-                    self.__get_key_path(key_id or self.default_key)), password)
-
-    def __decode_key_id(self, byte_id: bytes) -> str:
-        """Convert byte key id to string."""
-        return byte_id.hex()
-
-    def __encode_password(self,
-                          password: Union[str, None]) -> Union[bytes, None]:
-        """Convert string password to bytes or return None if None."""
-        if password is not None:
-            return password.encode(self.encoding)
-        return password
-
     def is_encrypted(self, key_id: Optional[str] = None,
                      path: Optional[str] = None) -> bool:
-        """Check if specific key file is encrypted via password."""
-        if key_id and key_id.endswith(".pub"):
-            return False
-        key = self.__read_key(path or
-                              self.__get_key_path(key_id or self.default_key))
-        if key.splitlines()[0] == b"-----BEGIN ENCRYPTED PRIVATE KEY-----":
-            return True
-        return False
+        pass
 
     def set_default(self, key_id: str) -> None:
-        """Set default key for using."""
-        if key_id in self.private_keys:
-            self.default_key = key_id
-            self.__write_config()
-        else:
-            logging.error("No such private key")
+        pass
 
     def delete_key(self, key_id: str) -> None:
         """Try to delete key file and remove id from config."""
@@ -311,31 +282,22 @@ class KeyManager:
         self.__write_config()
 
     def generate(self, key_size: int, password: Optional[str] = None) -> str:
-        """Generate new key and save to config."""
         key = PrivateKEK.generate(key_size)
-        key_id = self.__decode_key_id(key.key_id)
-        self.private_keys.add(key_id)
-        if not self.default_key:
-            self.default_key = key_id
-        self.__save_key_to_file(self.__get_key_path(key_id),
-                                key, password)
-        self.__write_config()
-        return key_id
+        return self.key_storage.add(key, password)
 
-    def encrypt(self,
-                file: str,
-                output_file: Optional[str] = None,
-                key_id: Optional[str] = None,
-                password: Optional[str] = None,
-                overwrite: bool = False,
-                work_dir: Optional[str] = None) -> str:
-        """Encrypt and write file."""
-        file_path = self.get_full_path(file, work_dir)
-        key = self.__load_key_by_id(key_id, password)
+    def encrypt(
+        self,
+        file: str,
+        output_file: Optional[str] = None,
+        key_id: Optional[str] = None,
+        password: Optional[str] = None,
+        overwrite: bool = False
+    ) -> str:
+        key = self.key_storage.get(key_id, password)
+        file_path = self.get_full_path(file)
         encrypted_bytes = key.encrypt(self.__read_file(file_path))
-        default_filename = f"{file}.kek"
-        output_path = self.get_full_path(output_file or default_filename,
-                                         work_dir)
+        default_filename = f"{file_path}.kek"
+        output_path = self.get_full_path(output_file or default_filename)
         if os.path.isdir(output_path):
             output_path = os.path.join(output_path, default_filename)
         self.__write_file(output_path, encrypted_bytes, overwrite)
