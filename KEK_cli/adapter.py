@@ -21,6 +21,7 @@ def exception_decorator(func: Callable):
             logging.debug(traceback.format_exc())
             if err_type == FileExistsError:
                 logging.info("To overwrite use '-r' option")
+            sys.exit(1)
     return wrapper
 
 
