@@ -9,7 +9,7 @@ from KEK.hybrid import PrivateKEK, PublicKEK
 
 
 class BaseFile:
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str):
         if os.path.isdir(path):
             raise IsADirectoryError("Can't open file because it's a directory")
         self._path = path
@@ -41,7 +41,7 @@ class BaseFile:
 
 
 class KeyFile(BaseFile):
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str):
         super().__init__(path)
 
     @property
@@ -78,7 +78,7 @@ class KeyFile(BaseFile):
 
 
 class File(BaseFile):
-    def __init__(self, path: str, overwritable=False) -> None:
+    def __init__(self, path: str, overwritable=False):
         super().__init__(path)
         self.overwritable = overwritable
 
@@ -101,7 +101,7 @@ class File(BaseFile):
 
 
 class EncryptedFile(File):
-    def __init__(self, path: str, overwritable=False) -> None:
+    def __init__(self, path: str, overwritable=False):
         super().__init__(path, overwritable)
 
     @property
@@ -115,7 +115,7 @@ class EncryptedFile(File):
 
 
 class SignatureFile(File):
-    def __init__(self, path: str, overwritable=False) -> None:
+    def __init__(self, path: str, overwritable=False):
         super().__init__(path, overwritable)
 
     def verify(
@@ -132,7 +132,7 @@ class KeyStorage:
     config_filename = "config.json"
     password_encoding = "ascii"
 
-    def __init__(self, location: str) -> None:
+    def __init__(self, location: str):
         if not os.path.isabs(location):
             raise ValueError(
                 "Invalid storage location. Must be absolute path."
@@ -145,13 +145,13 @@ class KeyStorage:
         self._key_objects = {}
         self.__load_directory()
 
-    def __load_directory(self) -> None:
+    def __load_directory(self):
         if not os.path.isdir(self._location):
             os.mkdir(self._location)
             os.chmod(self._location, self.directory_permissions)
         self.__load_config()
 
-    def __load_config(self) -> None:
+    def __load_config(self):
         config = {}
         if os.path.isfile(self._config_path):
             with open(self._config_path, "r") as config_file:
@@ -160,7 +160,7 @@ class KeyStorage:
         self._private_keys = set(config.get("private", []))
         self._public_keys = set(config.get("public", []))
 
-    def __write_config(self) -> None:
+    def __write_config(self):
         with open(self._config_path, "w") as config_file:
             json.dump({
                 "default": self._default_key,
@@ -200,7 +200,7 @@ class KeyStorage:
             raise FileNotFoundError(f"Key '{key_id}' not found")
         return KeyFile(key_path)
 
-    def __write_key(self, key_id: str, serialized_bytes: bytes) -> None:
+    def __write_key(self, key_id: str, serialized_bytes: bytes):
         key_path = self.__get_key_path(key_id)
         key_file = KeyFile(key_path)
         key_file.write(serialized_bytes)
@@ -253,12 +253,17 @@ class KeyStorage:
     ) -> Union[PrivateKEK, PublicKEK]:
         key_id = key_id or self.default_key
         all_keys = self._private_keys.union(self._public_keys)
-        if not key_id and key_id not in all_keys:
+        if not key_id or key_id not in all_keys:
             raise ValueError("Key not found")
         if key_id not in self._key_objects:
             key_object = self.__load_key(key_id, password)
             self._key_objects[key_id] = key_object
         return self._key_objects[key_id]
+
+    def delete(
+        self,
+        key_id: str
+    ): ...
 
 
 class KeyManager:
@@ -272,7 +277,7 @@ class KeyManager:
         self,
         storage_location: Optional[str] = None,
         work_dir: Optional[str] = None
-    ) -> None:
+    ):
         self.storage_location = os.path.expanduser(
             storage_location
             or self.default_storage_location
@@ -295,7 +300,7 @@ class KeyManager:
         self,
         path: str, byte_data: bytes,
         overwrite: bool = False
-    ) -> None:
+    ):
         if not overwrite and os.path.isfile(path):
             raise FileExistsError("File exists")
         with open(path, "wb") as f:
@@ -305,10 +310,10 @@ class KeyManager:
                      path: Optional[str] = None) -> bool:
         pass
 
-    def set_default(self, key_id: str) -> None:
+    def set_default(self, key_id: str):
         pass
 
-    def delete_key(self, key_id: str) -> None:
+    def delete_key(self, key_id: str):
         """Try to delete key file and remove id from config."""
         if key_id not in self.private_keys.union(self.public_keys):
             raise FileNotFoundError("Key not found")
@@ -434,7 +439,7 @@ class KeyManager:
                    output_file: Optional[str] = None,
                    password: Optional[str] = None,
                    overwrite: bool = False,
-                   work_dir: Optional[str] = None) -> None:
+                   work_dir: Optional[str] = None):
         """Export key to file."""
         output_path = self.get_full_path(output_file or f"{id}.kek", work_dir)
         if id.endswith(".pub"):

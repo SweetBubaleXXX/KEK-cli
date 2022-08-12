@@ -39,7 +39,7 @@ def pinentry(attribute: str):
 
 
 class CliAdapter:
-    def __init__(self, key_manager: KeyManager) -> None:
+    def __init__(self, key_manager: KeyManager):
         self.key_manager = key_manager
 
     def __should_overwrite(self, path: str) -> bool:
@@ -70,14 +70,14 @@ class CliAdapter:
             logging.debug(f"Output file: {output_path}")
 
     @exception_decorator
-    def info(self, args: Namespace) -> None:
+    def info(self, args: Namespace):
         logging.info(f"KEK algorithm version: {KeyManager.KEK_version}")
         logging.info(f"Encryption algorithm: {KeyManager.KEK_algorithm}")
         logging.info(f"Avaliable key sizes: {KeyManager.KEK_key_sizes}")
         logging.info(f"Config location: {self.key_manager.config_path}")
 
     @exception_decorator
-    def list_keys(self, args: Namespace) -> None:
+    def list_keys(self, args: Namespace):
         logging.info(f"Default: {self.key_manager.default_key}")
         logging.info("Private: \n\t{}".format(
             "\n\t".join(self.key_manager.private_keys) or "empty"))
@@ -85,16 +85,16 @@ class CliAdapter:
             "\n\t".join(self.key_manager.public_keys) or "empty"))
 
     @exception_decorator
-    def set_default(self, args: Namespace) -> None:
+    def set_default(self, args: Namespace):
         self.key_manager.set_default(args.id)
 
     @exception_decorator
-    def delete_key(self, args: Namespace) -> None:
+    def delete_key(self, args: Namespace):
         self.key_manager.delete_key(args.id)
         logging.info("Successfully deleted key")
 
     @exception_decorator
-    def generate(self, args: Namespace) -> None:
+    def generate(self, args: Namespace):
         logging.info(
             "Choose passphrase for key or leave empty for no passphrase")
         password = getpass()
@@ -108,25 +108,25 @@ class CliAdapter:
 
     @exception_decorator
     @pinentry("key_id")
-    def encrypt(self, args: Namespace, password: Optional[str] = None) -> None:
+    def encrypt(self, args: Namespace, password: Optional[str] = None):
         self.__multifile_operation(self.key_manager.encrypt, args,
                                    password, "Successfully encrypted file")
 
     @exception_decorator
     @pinentry("key_id")
-    def decrypt(self, args: Namespace, password: Optional[str] = None) -> None:
+    def decrypt(self, args: Namespace, password: Optional[str] = None):
         self.__multifile_operation(self.key_manager.decrypt, args,
                                    password, "Successfully decrypted file")
 
     @exception_decorator
     @pinentry("key_id")
-    def sign(self, args: Namespace, password: Optional[str] = None) -> None:
+    def sign(self, args: Namespace, password: Optional[str] = None):
         self.__multifile_operation(self.key_manager.sign, args,
                                    password, "Successfully signed file")
 
     @exception_decorator
     @pinentry("key_id")
-    def verify(self, args: Namespace, password: Optional[str] = None) -> None:
+    def verify(self, args: Namespace, password: Optional[str] = None):
         verified = self.key_manager.verify(
             args.signature.name,
             args.file.name,
@@ -140,7 +140,7 @@ class CliAdapter:
 
     @exception_decorator
     def import_key(self, args: Namespace,
-                   password: Optional[str] = None) -> None:
+                   password: Optional[str] = None):
         if self.key_manager.is_encrypted(path=args.file.name):
             logging.info("Enter passphrase for key")
             password = getpass()
@@ -151,7 +151,7 @@ class CliAdapter:
     @exception_decorator
     @pinentry("id")
     def export_key(self, args: Namespace,
-                   password: Optional[str] = None) -> None:
+                   password: Optional[str] = None):
         self.key_manager.export_key(args.id, args.public,
                                     args.output_file, password, args.overwrite)
         logging.info("Successfully exported key")
