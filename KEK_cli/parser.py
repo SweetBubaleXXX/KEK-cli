@@ -1,12 +1,12 @@
 import argparse
 
-from KEK_cli.backend import KeyManager
+from KEK.hybrid import PrivateKEK
 
 from ._version import __version__
-from .key_manager import key_manager
 from .adapter import CliAdapter
+from .key_storage import key_storage
 
-adapter = CliAdapter(key_manager)
+adapter = CliAdapter(key_storage)
 
 parser = argparse.ArgumentParser(
     description="CLI for Kinetic Encryption Key"
@@ -49,11 +49,11 @@ generate_parser = subparsers.add_parser("generate", help="generate key")
 generate_parser.add_argument(
     "-s",
     "--size",
-    default=KeyManager.KEK_default_size,
+    default=PrivateKEK.default_size,
     type=int,
-    choices=KeyManager.KEK_key_sizes,
+    choices=PrivateKEK.key_sizes,
     dest="key_size",
-    help=f"size of a key, default - {KeyManager.KEK_default_size}",
+    help=f"size of a key, default - {PrivateKEK.default_size}",
 )
 generate_parser.set_defaults(func=adapter.generate)
 

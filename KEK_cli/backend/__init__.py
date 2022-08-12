@@ -1,1 +1,1 @@
-from .offline import KeyManager
+from .storage import KeyStorage
