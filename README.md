@@ -1,6 +1,6 @@
 # KEK-cli
 ![Python](https://img.shields.io/badge/Python->=3.7-orange)
-![gnukek](https://img.shields.io/badge/gnukek-==1.0.0b3-yellow)
+![gnukek](https://img.shields.io/badge/gnukek-==1.0.0b6-yellow)
 ![License](https://img.shields.io/pypi/l/gnukek-cli)
 ![Status](https://img.shields.io/pypi/status/gnukek-cli)
 
