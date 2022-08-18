@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import random
-from typing import Dict, Optional, Set, Union
+from typing import Dict, List, Optional, Set, Union
 
 from KEK.hybrid import PrivateKEK, PublicKEK
 
@@ -47,14 +47,15 @@ class KeyStorage:
         if key_id not in self._private_keys:
             raise ValueError("No such private key")
         self._default_key = key_id
+        self.__write_config()
 
     @property
-    def private_keys(self) -> Set[str]:
-        return self._private_keys
+    def private_keys(self) -> List[str]:
+        return sorted(self._private_keys)
 
     @property
-    def public_keys(self) -> Set[str]:
-        return self._public_keys
+    def public_keys(self) -> List[str]:
+        return sorted(self._public_keys)
 
     def __load_directory(self):
         if not os.path.isdir(self._location):
@@ -158,11 +159,12 @@ class KeyStorage:
             self._public_keys.remove(key_id)
         else:
             self._private_keys.remove(key_id)
-            # if key_id == self.default_key:
-            #     default_key_id = random.choice(
-            #         list(self._private_keys) or [None])
-            #     self.default_key = default_key_id
-            #     logging.debug(f"New default key id: {default_key_id}")
+            if key_id == self.default_key:
+                default_key_id = random.choice(
+                    list(self._private_keys) or [None]
+                )
+                self._default_key = default_key_id
+                logging.debug("New default key id: %s", default_key_id)
         self.__write_config()
 
     def get(

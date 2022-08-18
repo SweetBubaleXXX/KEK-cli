@@ -13,7 +13,7 @@ from .backend import KeyStorage
 from .backend.files import EncryptedFile, File, KeyFile, SignatureFile
 
 
-def exception_decorator(func: Callable):
+def handle_exception(func: Callable):
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
@@ -47,36 +47,42 @@ class CliAdapter:
     def __init__(self, key_storage: KeyStorage):
         self.key_storage = key_storage
 
-    def __should_overwrite(self, path: str) -> bool:
-        logging.info(f"File '{path}' exists")
+    def __should_overwrite(self, args: Namespace) -> bool:
+        if (not args.overwrite and args.output_file
+                and os.path.isfile(args.output_file)):
+            return self.__ask_overwrite(args.output_file)
+        return args.overwrite
+
+    def __ask_overwrite(self, path: str) -> bool:
+        logging.info("File '%s' exists", path)
         answer = input("Overwrite? [Y/n] ").strip()
         return not answer or answer.lower() == "y"
 
-    @exception_decorator
+    @handle_exception
     def info(self, args: Namespace):
-        logging.info(f"KEK algorithm version: {PrivateKEK.version}")
-        logging.info(f"Encryption algorithm: {PrivateKEK.algorithm}")
-        logging.info(f"Avaliable key sizes: {PrivateKEK.key_sizes}")
-        logging.info(f"Config location: {self.key_storage.config_path}")
+        logging.info("KEK algorithm version: %s", PrivateKEK.version)
+        logging.info("Encryption algorithm: %s", PrivateKEK.algorithm)
+        logging.info("Avaliable key sizes: %s", PrivateKEK.key_sizes)
+        logging.info("Config location: %s", self.key_storage.config_path)
 
-    @exception_decorator
+    @handle_exception
     def list_keys(self, args: Namespace):
-        logging.info(f"Default: {self.key_storage.default_key}")
-        logging.info("Private: \n\t{}".format(
-            "\n\t".join(self.key_storage.private_keys) or "No keys"))
-        logging.info("Public: \n\t{}".format(
-            "\n\t".join(self.key_storage.public_keys) or "No keys"))
+        logging.info("Default: %s", self.key_storage.default_key)
+        logging.info("Private: \n\t%s",
+                     "\n\t".join(self.key_storage.private_keys) or "No keys")
+        logging.info("Public: \n\t%s",
+                     "\n\t".join(self.key_storage.public_keys) or "No keys")
 
-    @exception_decorator
+    @handle_exception
     def set_default(self, args: Namespace):
-        self.key_storage.default = args.id
+        self.key_storage.default_key = args.id
 
-    @exception_decorator
+    @handle_exception
     def delete_key(self, args: Namespace):
         self.key_storage.remove(args.id)
         logging.info("Successfully deleted key")
 
-    @exception_decorator
+    @handle_exception
     def generate(self, args: Namespace):
         logging.info(
             "Choose password for key or leave empty for no password")
@@ -86,19 +92,15 @@ class CliAdapter:
             if password != repeated_password:
                 raise ValueError("Passwords don't match")
         key = PrivateKEK.generate(args.key_size)
-        id = self.key_storage.add(key, password or None)
+        key_id = self.key_storage.add(key, password or None)
         logging.info("Successfully created new key")
-        logging.info(f"Key id: {id}")
+        logging.info("Key id: %s", key_id)
 
-    @exception_decorator
+    @handle_exception
     @pinentry("key_id")
     def encrypt(self, args: Namespace, password: Optional[str] = None):
         for file in args.files:
-            if (not args.overwrite and args.output_file
-                    and os.path.isfile(args.output_file)):
-                overwrite = self.__should_overwrite(args.output_file)
-            else:
-                overwrite = args.overwrite
+            overwrite = self.__should_overwrite(args)
             input_file = File(file.name, overwrite)
             output_path = args.output_file or input_file.output_path
             output_file = EncryptedFile(output_path, overwrite)
@@ -108,48 +110,74 @@ class CliAdapter:
             )
             encrypted_bytes = input_file.encrypt(key)
             output_file.write(encrypted_bytes)
-        logging.info("Successfully encrypted file")
+            logging.info("Successfully encrypted file '%s'", file.name)
 
-    @exception_decorator
+    @handle_exception
     @pinentry("key_id")
     def decrypt(self, args: Namespace, password: Optional[str] = None):
-        self.__multifile_operation(self.key_storage.decrypt, args,
-                                   password, "Successfully decrypted file")
+        for file in args.files:
+            overwrite = self.__should_overwrite(args)
+            input_file = EncryptedFile(file.name, overwrite)
+            output_path = args.output_file or input_file.output_path
+            output_file = File(output_path, overwrite)
+            key = self.key_storage.get(
+                args.key_id or self.key_storage.default_key,
+                password
+            )
+            decrypted_bytes = input_file.decrypt(key)
+            output_file.write(decrypted_bytes)
+            logging.info("Successfully decrypted file '%s'", file.name)
 
-    @exception_decorator
+    @handle_exception
     @pinentry("key_id")
     def sign(self, args: Namespace, password: Optional[str] = None):
-        self.__multifile_operation(self.key_storage.sign, args,
-                                   password, "Successfully signed file")
+        for file in args.files:
+            overwrite = self.__should_overwrite(args)
+            input_file = File(file.name, overwrite)
+            output_path = args.output_file or input_file.output_path
+            output_file = SignatureFile(output_path, overwrite)
+            key = self.key_storage.get(
+                args.key_id or self.key_storage.default_key,
+                password
+            )
+            signature_bytes = input_file.sign(key)
+            output_file.write(signature_bytes)
+            logging.info("Successfully signed file '%s'", file.name)
 
-    @exception_decorator
+    @handle_exception
     @pinentry("key_id")
     def verify(self, args: Namespace, password: Optional[str] = None):
-        verified = self.key_storage.verify(
-            args.signature.name,
-            args.file.name,
-            args.key_id,
+        signature_file = SignatureFile(args.signature.name)
+        original_file = File(args.file.name)
+        key = self.key_storage.get(
+            args.key_id or self.key_storage.default_key,
             password
         )
+        verified = signature_file.verify(key, original_file.read())
         if verified:
             logging.info("Verified")
         else:
             logging.info("Verification failed")
 
-    @exception_decorator
-    def import_key(self, args: Namespace,
-                   password: Optional[str] = None):
-        if self.key_storage.is_encrypted(path=args.file.name):
-            logging.info("Enter passphrase for key")
+    @handle_exception
+    def import_key(self, args: Namespace, password: Optional[str] = None):
+        key_file = KeyFile(args.file.name)
+        if key_file.is_encrypted:
+            logging.info("Enter password for key")
             password = getpass()
-        id = self.key_storage.import_key(args.file.name, password)
+        encoded_password = self.key_storage.encode_password(password)
+        serialized_bytes = key_file.load(encoded_password)
+        key_id = self.key_storage.add(serialized_bytes)
         logging.info("Successfully imported key")
-        logging.info(f"Key id: {id}")
+        logging.info("Key id: %s", key_id)
 
-    @exception_decorator
+    @handle_exception
     @pinentry("id")
-    def export_key(self, args: Namespace,
-                   password: Optional[str] = None):
-        self.key_storage.export_key(args.id, args.public,
-                                    args.output_file, password, args.overwrite)
+    def export_key(self, args: Namespace, password: Optional[str] = None):
+        key_object = self.key_storage.get(args.id, password)
+        if args.public and isinstance(key_object, PrivateKEK):
+            key_object = key_object.public_key
+        output_file = KeyFile(f"{args.id}.kek")
+        encoded_password = self.key_storage.encode_password(password)
+        output_file.export(key_object, encoded_password)
         logging.info("Successfully exported key")
