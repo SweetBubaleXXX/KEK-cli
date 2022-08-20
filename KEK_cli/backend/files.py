@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import os
-from typing import Optional, Union
+from contextlib import contextmanager
+from typing import IO, Generator, Optional, Union
 
 from KEK.hybrid import PrivateKEK, PublicKEK
 
@@ -10,6 +13,11 @@ class BaseFile:
             raise IsADirectoryError("Can't open file because it's a directory")
         self._path = path
         self._parent_folder, self._filename = os.path.split(path)
+
+    def __eq__(self, __o: object) -> bool:
+        if not isinstance(__o, BaseFile):
+            return NotImplemented
+        return self._path == __o._path
 
     @property
     def path(self) -> str:
@@ -27,12 +35,20 @@ class BaseFile:
     def exists(self) -> bool:
         return os.path.isfile(self._path)
 
+    @contextmanager
+    def open(self, mode: str) -> Generator[IO, None, None]:
+        file = open(self._path, mode)
+        try:
+            yield file
+        finally:
+            file.close()
+
     def read(self, number_of_bytes: Optional[int] = None) -> bytes:
-        with open(self._path, "rb") as file:
+        with self.open("rb") as file:
             return file.read(number_of_bytes)
 
     def write(self, byte_data: bytes) -> int:
-        with open(self._path, "wb") as file:
+        with self.open("wb") as file:
             return file.write(byte_data)
 
     def delete(self):

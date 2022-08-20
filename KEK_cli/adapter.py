@@ -5,9 +5,9 @@ import traceback
 from argparse import Namespace
 from functools import wraps
 from getpass import getpass
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
-from KEK.hybrid import PrivateKEK
+from KEK.hybrid import PrivateKEK, PublicKEK
 
 from .backend import KeyStorage
 from .backend.files import EncryptedFile, File, KeyFile, SignatureFile
@@ -57,6 +57,34 @@ class CliAdapter:
         logging.info("File '%s' exists", path)
         answer = input("Overwrite? [Y/n] ").strip()
         return not answer or answer.lower() == "y"
+
+    def __encrypt_chunks(
+        self,
+        key: Union[PrivateKEK, PublicKEK],
+        input_file: File,
+        output_file: EncryptedFile,
+        chunk_length: int
+    ):
+        with (
+            input_file.open("rb") as input_stream,
+            output_file.open("wb") as output_stream
+        ):
+            for chunk in key.encrypt_chunks(input_stream, chunk_length):
+                output_stream.write(chunk)
+
+    def __decrypt_chunks(
+        self,
+        key: PrivateKEK,
+        input_file: EncryptedFile,
+        output_file: File,
+        chunk_length: int
+    ):
+        with (
+            input_file.open("rb") as input_stream,
+            output_file.open("wb") as output_stream
+        ):
+            for chunk in key.decrypt_chunks(input_stream, chunk_length):
+                output_stream.write(chunk)
 
     @handle_exception
     def info(self, args: Namespace):
@@ -108,8 +136,18 @@ class CliAdapter:
                 args.key_id or self.key_storage.default_key,
                 password
             )
-            encrypted_bytes = input_file.encrypt(key)
-            output_file.write(encrypted_bytes)
+            if args.no_chunk:
+                encrypted_bytes = input_file.encrypt(key)
+                output_file.write(encrypted_bytes)
+            elif input_file == output_file:
+                raise ValueError
+            else:
+                self.__encrypt_chunks(
+                    key,
+                    input_file,
+                    output_file,
+                    args.chunk_size
+                )
             logging.info("Successfully encrypted file '%s'", file.name)
 
     @handle_exception
@@ -124,8 +162,18 @@ class CliAdapter:
                 args.key_id or self.key_storage.default_key,
                 password
             )
-            decrypted_bytes = input_file.decrypt(key)
-            output_file.write(decrypted_bytes)
+            if args.no_chunk:
+                decrypted_bytes = input_file.decrypt(key)
+                output_file.write(decrypted_bytes)
+            elif input_file == output_file:
+                raise ValueError
+            else:
+                self.__decrypt_chunks(
+                    key,
+                    input_file,
+                    output_file,
+                    args.chunk_size
+                )
             logging.info("Successfully decrypted file '%s'", file.name)
 
     @handle_exception

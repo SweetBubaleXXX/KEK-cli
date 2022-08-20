@@ -30,19 +30,25 @@ subparsers = parser.add_subparsers(
     required=True
 )
 
-info_parser = subparsers.add_parser("info",
-                                    help="show info about KEK algorithm")
+info_parser = subparsers.add_parser(
+    "info",
+    help="show info about KEK algorithm"
+)
 info_parser.set_defaults(func=adapter.info)
 
 list_parser = subparsers.add_parser("list", help="list keys")
 list_parser.set_defaults(func=adapter.list_keys)
 
-default_key_parser = subparsers.add_parser("default",
-                                           help="set default private key")
+default_key_parser = subparsers.add_parser(
+    "default",
+    help="set default private key"
+)
 default_key_parser.set_defaults(func=adapter.set_default)
 
-delete_parser = subparsers.add_parser("delete",
-                                      help="delete key")
+delete_parser = subparsers.add_parser(
+    "delete",
+    help="delete key"
+)
 delete_parser.set_defaults(func=adapter.delete_key)
 
 generate_parser = subparsers.add_parser("generate", help="generate key")
@@ -119,6 +125,24 @@ for subparser in [encrypt_parser, decrypt_parser, sign_parser, verify_parser]:
         type=str,
         dest="key_id",
         help="id of a key to use"
+    )
+
+for subparser in [encrypt_parser, decrypt_parser]:
+    subparser.add_argument(
+        "--no-chunks",
+        action="store_true",
+        dest="no_chunk",
+        help="load the whole file to RAM"
+    )
+    subparser.add_argument(
+        "--chunk-size",
+        default=1024*1024,
+        type=int,
+        dest="chunk_size",
+        help=(
+            f"(in bytes), must be multiple of {PrivateKEK.block_size//8}, "
+            f"default - {1024*1024} bytes (1MB)"
+        )
     )
 
 for subparser in [delete_parser, default_key_parser, export_parser]:
