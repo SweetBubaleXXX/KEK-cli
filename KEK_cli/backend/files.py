@@ -107,7 +107,7 @@ class File(BaseFile):
                 "Can't write file because it is already exists"
             )
 
-    def open(self, mode: str) -> Generator[IO, None, None]:
+    def open(self, mode: str):
         if "w" in mode:
             self.__verify_overwritable()
         return super().open(mode)

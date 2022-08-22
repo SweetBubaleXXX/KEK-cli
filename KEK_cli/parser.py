@@ -45,6 +45,12 @@ default_key_parser = subparsers.add_parser(
 )
 default_key_parser.set_defaults(func=adapter.set_default)
 
+change_pass_parser = subparsers.add_parser(
+    "changepass",
+    help="change password of private key"
+)
+change_pass_parser.set_defaults(func=adapter.change_pass)
+
 delete_parser = subparsers.add_parser(
     "delete",
     help="delete key"
@@ -145,7 +151,8 @@ for subparser in [encrypt_parser, decrypt_parser]:
         )
     )
 
-for subparser in [delete_parser, default_key_parser, export_parser]:
+for subparser in [change_pass_parser, delete_parser,
+                  default_key_parser, export_parser]:
     subparser.add_argument(
         "id",
         type=str

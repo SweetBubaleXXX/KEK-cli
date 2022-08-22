@@ -36,11 +36,26 @@ def pinentry(attribute: str):
             if self.key_storage.export(
                 getattr(args, attribute) or self.key_storage.default_key
             ).is_encrypted:
-                logging.info("Enter password for key")
-                password = getpass()
+                password = _ask_password()
             return func(self, args, password)
         return wrapper
     return decorator
+
+
+def _ask_password() -> str:
+    logging.info("Enter password for key")
+    return getpass()
+
+
+def _ask_new_password() -> str:
+    logging.info(
+        "Choose password for key or leave empty for no password")
+    password = getpass()
+    if password:
+        repeated_password = getpass("Repeat password: ")
+        if password != repeated_password:
+            raise ValueError("Passwords don't match")
+    return password
 
 
 class CliAdapter:
@@ -106,19 +121,22 @@ class CliAdapter:
         self.key_storage.default_key = args.id
 
     @handle_exception
+    @pinentry("id")
+    def change_pass(self, args: Namespace, password: Optional[str] = None):
+        key_object = self.key_storage.get(args.id, password)
+        if isinstance(key_object, PublicKEK):
+            raise ValueError("Can't set password for public key")
+        new_password = _ask_new_password()
+        self.key_storage.add(key_object, new_password)
+
+    @handle_exception
     def delete_key(self, args: Namespace):
         self.key_storage.remove(args.id)
         logging.info("Successfully deleted key")
 
     @handle_exception
     def generate(self, args: Namespace):
-        logging.info(
-            "Choose password for key or leave empty for no password")
-        password = getpass()
-        if password:
-            repeated_password = getpass("Repeat password: ")
-            if password != repeated_password:
-                raise ValueError("Passwords don't match")
+        password = _ask_new_password()
         key = PrivateKEK.generate(args.key_size)
         key_id = self.key_storage.add(key, password or None)
         logging.info("Successfully created new key")
@@ -163,6 +181,8 @@ class CliAdapter:
                 args.key_id or self.key_storage.default_key,
                 password
             )
+            if isinstance(key, PublicKEK):
+                raise TypeError("Can't decrypt data using public key")
             if args.no_chunk:
                 decrypted_bytes = input_file.decrypt(key)
                 output_file.write(decrypted_bytes)
@@ -190,6 +210,8 @@ class CliAdapter:
                 args.key_id or self.key_storage.default_key,
                 password
             )
+            if isinstance(key, PublicKEK):
+                raise TypeError("Can't sign data using public key")
             signature_bytes = input_file.sign(key)
             output_file.write(signature_bytes)
             logging.info("Successfully signed file '%s'", file.name)
