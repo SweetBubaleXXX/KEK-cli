@@ -5,7 +5,6 @@ import traceback
 from argparse import Namespace
 from functools import wraps
 from getpass import getpass
-from io import SEEK_CUR, IOBase
 from typing import Callable, Optional, Union
 
 from KEK.hybrid import PrivateKEK, PublicKEK
