@@ -5,6 +5,7 @@ import traceback
 from argparse import Namespace
 from functools import wraps
 from getpass import getpass
+from io import SEEK_CUR, IOBase
 from typing import Callable, Optional, Union
 
 from KEK.hybrid import PrivateKEK, PublicKEK
@@ -154,11 +155,9 @@ class CliAdapter:
                 args.key_id or self.key_storage.default_key,
                 password
             )
-            if args.no_chunk:
+            if args.no_chunk or input_file == output_file:
                 encrypted_bytes = input_file.encrypt(key)
                 output_file.write(encrypted_bytes)
-            elif input_file == output_file:
-                raise ValueError
             else:
                 self.__encrypt_chunks(
                     key,
@@ -183,11 +182,9 @@ class CliAdapter:
             )
             if isinstance(key, PublicKEK):
                 raise TypeError("Can't decrypt data using public key")
-            if args.no_chunk:
+            if args.no_chunk or input_file == output_file:
                 decrypted_bytes = input_file.decrypt(key)
                 output_file.write(decrypted_bytes)
-            elif input_file == output_file:
-                raise ValueError
             else:
                 self.__decrypt_chunks(
                     key,
