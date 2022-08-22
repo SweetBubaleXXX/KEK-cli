@@ -101,11 +101,19 @@ class File(BaseFile):
     def output_path(self) -> str:
         return f"{self._path}.kek"
 
-    def write(self, byte_data: bytes) -> int:
+    def __verify_overwritable(self):
         if not self.overwritable and self.exists:
             raise FileExistsError(
                 "Can't write file because it is already exists"
             )
+
+    def open(self, mode: str) -> Generator[IO, None, None]:
+        if "w" in mode:
+            self.__verify_overwritable()
+        return super().open(mode)
+
+    def write(self, byte_data: bytes) -> int:
+        self.__verify_overwritable()
         return super().write(byte_data)
 
     def encrypt(self, key_object: Union[PrivateKEK, PublicKEK]) -> bytes:
