@@ -149,6 +149,7 @@ class CliAdapter:
                     args.chunk_size
                 )
             logging.info("Successfully encrypted file '%s'", file.name)
+            logging.debug("Output file '%s'", output_file.path)
 
     @handle_exception
     @pinentry("key_id")
@@ -175,6 +176,7 @@ class CliAdapter:
                     args.chunk_size
                 )
             logging.info("Successfully decrypted file '%s'", file.name)
+            logging.debug("Output file '%s'", output_file.path)
 
     @handle_exception
     @pinentry("key_id")
@@ -191,6 +193,7 @@ class CliAdapter:
             signature_bytes = input_file.sign(key)
             output_file.write(signature_bytes)
             logging.info("Successfully signed file '%s'", file.name)
+            logging.debug("Output file '%s'", output_file.path)
 
     @handle_exception
     @pinentry("key_id")
@@ -229,3 +232,4 @@ class CliAdapter:
         encoded_password = self.key_storage.encode_password(password)
         output_file.export(key_object, encoded_password)
         logging.info("Successfully exported key")
+        logging.debug("Output file '%s'", output_file.path)
