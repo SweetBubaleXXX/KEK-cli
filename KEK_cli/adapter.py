@@ -246,7 +246,7 @@ class CliAdapter:
         key_object = self.key_storage.get(args.id, password)
         if args.public and isinstance(key_object, PrivateKEK):
             key_object = key_object.public_key
-        output_file = KeyFile(f"{args.id}.kek")
+        output_file = KeyFile(args.output_file or f"{args.id}.kek")
         encoded_password = self.key_storage.encode_password(password)
         output_file.export(key_object, encoded_password)
         logging.info("Successfully exported key")
