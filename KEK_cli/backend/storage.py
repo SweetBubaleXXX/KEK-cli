@@ -6,84 +6,58 @@ from typing import Dict, List, Optional, Set, Union
 
 from KEK.hybrid import PrivateKEK, PublicKEK
 
+from .config import Config
 from .files import KeyFile
 
 
 class KeyStorage:
     directory_permissions = 0o700
     key_file_permissions = 0o600
-    config_filename = "config.json"
     password_encoding = "ascii"
 
-    def __init__(self, location: str):
-        if not os.path.isabs(location):
-            raise ValueError(
-                "Invalid storage location. Must be absolute path."
-            )
+    def __init__(self, location: str, config: Config):
         self._location = location
-        self._config_path = os.path.join(self._location, self.config_filename)
-        self._default_key: Optional[str] = None
-        self._private_keys: Set[str] = set()
-        self._public_keys: Set[str] = set()
+        self.config = config
         self._key_objects: Dict[str, Union[PrivateKEK, PublicKEK]] = {}
         self.__load_directory()
 
     def __contains__(self, key_id: str) -> bool:
-        all_keys = self._private_keys.union(self._public_keys)
+        all_keys = self.config.private_keys.union(self.config.public_keys)
         return key_id in all_keys
 
     @property
     def config_path(self) -> str:
-        return self._config_path
+        return self.config.path
 
     @property
     def default_key(self) -> Optional[str]:
-        if not self._default_key:
+        if not self.config.default_key:
             logging.debug("No default key")
-        return self._default_key
+        return self.config.default_key
 
     @default_key.setter
     def default_key(self, key_id: Optional[str]):
-        if key_id not in self._private_keys:
+        if key_id not in self.config.private_keys:
             raise ValueError("No such private key")
-        self._default_key = key_id
-        self.__write_config()
+        self.config.default_key = key_id
+        self.config.write()
 
     @property
     def private_keys(self) -> List[str]:
-        return sorted(self._private_keys)
+        return sorted(self.config.private_keys)
 
     @property
     def public_keys(self) -> List[str]:
-        return sorted(self._public_keys)
+        return sorted(self.config.public_keys)
 
     def __load_directory(self):
         if not os.path.isdir(self._location):
             os.mkdir(self._location)
             os.chmod(self._location, self.directory_permissions)
-        self.__load_config()
-
-    def __load_config(self):
-        config = {}
-        if os.path.isfile(self._config_path):
-            with open(self._config_path, "r") as config_file:
-                config = json.load(config_file)
-        self._default_key = config.get("default", None)
-        self._private_keys = set(config.get("private", []))
-        self._public_keys = set(config.get("public", []))
-
-    def __write_config(self):
-        with open(self._config_path, "w") as config_file:
-            json.dump({
-                "default": self._default_key,
-                "private": list(self._private_keys),
-                "public": list(self._public_keys)
-            }, config_file, indent=2)
-            logging.debug("Config file written")
 
     def __add_public_key(self, key_object: PublicKEK, key_id: str) -> str:
         key_id = "".join((key_id, ".pub"))
-        self._public_keys.add(key_id)
+        self.config.public_keys.add(key_id)
         self.__write_key(key_id, key_object.serialize())
         return key_id
 
@@ -93,7 +67,7 @@ class KeyStorage:
         key_id: str,
         password: Optional[str] = None,
     ):
-        self._private_keys.add(key_id)
+        self.config.private_keys.add(key_id)
         self._default_key = self._default_key or key_id
         encoded_password = self.encode_password(password)
         self.__write_key(key_id, key_object.serialize(encoded_password))
@@ -144,7 +118,7 @@ class KeyStorage:
         else:
             self.__add_private_key(key_object, key_id, password)
         self._key_objects[key_id] = key_object
-        self.__write_config()
+        self.config.write()
         return key_id
 
     def remove(self, key_id: str):
@@ -156,16 +130,16 @@ class KeyStorage:
         except OSError:
             logging.debug("Key file not found")
         if key_id.endswith(".pub"):
-            self._public_keys.remove(key_id)
+            self.config.public_keys.remove(key_id)
         else:
-            self._private_keys.remove(key_id)
+            self.config.private_keys.remove(key_id)
             if key_id == self.default_key:
                 default_key_id = random.choice(
-                    list(self._private_keys) or [None]
+                    list(self.config.private_keys) or [None]
                 )
                 self._default_key = default_key_id
                 logging.debug("New default key id: %s", default_key_id)
-        self.__write_config()
+        self.config.write()
 
     def get(
         self,
