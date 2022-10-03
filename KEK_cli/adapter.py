@@ -80,10 +80,8 @@ class CliAdapter:
         output_file: EncryptedFile,
         chunk_length: int
     ):
-        with (
-            input_file.open("rb") as input_stream,
-            output_file.open("wb") as output_stream
-        ):
+        with input_file.open("rb") as input_stream, \
+             output_file.open("wb") as output_stream:
             for chunk in key.encrypt_chunks(input_stream, chunk_length):
                 output_stream.write(chunk)
 
@@ -94,10 +92,8 @@ class CliAdapter:
         output_file: File,
         chunk_length: int
     ):
-        with (
-            input_file.open("rb") as input_stream,
-            output_file.open("wb") as output_stream
-        ):
+        with input_file.open("rb") as input_stream, \
+             output_file.open("wb") as output_stream:
             for chunk in key.decrypt_chunks(input_stream, chunk_length):
                 output_stream.write(chunk)
 

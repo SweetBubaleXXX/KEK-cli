@@ -121,7 +121,7 @@ for subparser in [encrypt_parser, decrypt_parser, sign_parser, export_parser]:
         "--replace",
         action="store_true",
         dest="overwrite",
-        help="Overwrite file if exists"
+        help="overwrite file if exists"
     )
 
 for subparser in [encrypt_parser, decrypt_parser, sign_parser, verify_parser]:
