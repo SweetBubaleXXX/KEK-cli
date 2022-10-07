@@ -4,7 +4,7 @@ import os
 from typing import Optional, Set
 
 
-class Config:
+class ConfigFile:
     indent = 2
 
     def __init__(self, path: str):

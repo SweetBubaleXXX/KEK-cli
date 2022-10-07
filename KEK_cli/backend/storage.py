@@ -1,12 +1,11 @@
-import json
 import logging
 import os
 import random
-from typing import Dict, List, Optional, Set, Union
+from typing import Dict, List, Optional, Union
 
 from KEK.hybrid import PrivateKEK, PublicKEK
 
-from .config import Config
+from .config_file import ConfigFile
 from .files import KeyFile
 
 
@@ -15,7 +14,7 @@ class KeyStorage:
     key_file_permissions = 0o600
     password_encoding = "ascii"
 
-    def __init__(self, location: str, config: Config):
+    def __init__(self, location: str, config: ConfigFile):
         self._location = location
         self.config = config
         self._key_objects: Dict[str, Union[PrivateKEK, PublicKEK]] = {}
@@ -68,7 +67,7 @@ class KeyStorage:
         password: Optional[str] = None,
     ):
         self.config.private_keys.add(key_id)
-        self._default_key = self._default_key or key_id
+        self.config.default_key = self.config.default_key or key_id
         encoded_password = self.encode_password(password)
         self.__write_key(key_id, key_object.serialize(encoded_password))
 
@@ -134,11 +133,11 @@ class KeyStorage:
         else:
             self.config.private_keys.remove(key_id)
             if key_id == self.default_key:
-                default_key_id = random.choice(
+                new_default_key_id = random.choice(
                     list(self.config.private_keys) or [None]
                 )
-                self._default_key = default_key_id
-                logging.debug("New default key id: %s", default_key_id)
+                self.config.default_key = new_default_key_id
+                logging.debug("New default key id: %s", new_default_key_id)
         self.config.write()
 
     def get(
@@ -155,5 +154,5 @@ class KeyStorage:
 
     def export(self, key_id: Optional[str] = None) -> KeyFile:
         if not key_id:
-            raise
+            raise ValueError
         return self.__read_key(key_id)

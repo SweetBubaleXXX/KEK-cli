@@ -1,7 +1,4 @@
-import os
-
 from .backend import KeyStorage
+from .config import STORAGE_LOCATION, config_file
 
-STORAGE_LOCATION = os.path.expanduser("~/.kek")
-
-key_storage = KeyStorage(STORAGE_LOCATION)
+key_storage = KeyStorage(STORAGE_LOCATION, config_file)
