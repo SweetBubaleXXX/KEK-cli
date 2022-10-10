@@ -23,7 +23,11 @@ class TestFiles(TestWithTempdir):
         self.assertEqual(new_key_obj.key_id, key_obj.key_id)
 
     def test_file_decryption(self):
-        data_for_writing = b"byte data"
-        file_path = os.path.join(self.temp_dir.name, "0_file")
-        file = files.File(file_path)
-        ...
+        key_obj = PrivateKEK.generate()
+        data_for_encryption = b"byte data"
+        encrypted_data = key_obj.encrypt(data_for_encryption)
+        file_path = os.path.join(self.temp_dir.name, "2_file")
+        encrypted_file = files.EncryptedFile(file_path)
+        encrypted_file.write(encrypted_data)
+        decrypted_data = encrypted_file.decrypt(key_obj)
+        self.assertEqual(decrypted_data, data_for_encryption)

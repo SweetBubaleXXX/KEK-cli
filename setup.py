@@ -32,7 +32,8 @@ setup(name="gnukek-cli",
           "dev": [
               "mypy",
               "pycodestyle",
-              "pylint"
+              "pylint",
+              "pytest"
           ],
           "build": [
               "build",
