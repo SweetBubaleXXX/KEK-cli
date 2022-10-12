@@ -94,7 +94,8 @@ class KeyStorage:
     def __get_key_path(self, key_id: str) -> str:
         return os.path.join(self._location, f"{key_id}.kek")
 
-    def __decode_key_id(self, byte_id: bytes) -> str:
+    @classmethod
+    def decode_key_id(cls, byte_id: bytes) -> str:
         return byte_id.hex()
 
     @classmethod
@@ -111,7 +112,7 @@ class KeyStorage:
         key_object: Union[PrivateKEK, PublicKEK],
         password: Optional[str] = None
     ) -> str:
-        key_id = self.__decode_key_id(key_object.key_id)
+        key_id = self.decode_key_id(key_object.key_id)
         if isinstance(key_object, PublicKEK):
             key_id = self.__add_public_key(key_object, key_id)
         else:

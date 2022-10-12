@@ -1,6 +1,6 @@
 import os
 
-from .backend.config_file import ConfigFile
+from .backend import ConfigFile
 
 STORAGE_LOCATION = os.path.expanduser("~/.kek")
 CONFIG_LOCATION = os.path.join(STORAGE_LOCATION, "config.json")

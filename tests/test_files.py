@@ -31,3 +31,14 @@ class TestFiles(TestWithTempdir):
         encrypted_file.write(encrypted_data)
         decrypted_data = encrypted_file.decrypt(key_obj)
         self.assertEqual(decrypted_data, data_for_encryption)
+
+    def test_signature_file(self):
+        key_obj = PrivateKEK.generate()
+        data_for_signing = b"byte data"
+        signed_data = key_obj.sign(data_for_signing)
+        file_path = os.path.join(self.temp_dir.name, "3_file")
+        signature_file = files.SignatureFile(file_path)
+        signature_file.write(signed_data)
+        self.assertTrue(
+            signature_file.verify(key_obj, data_for_signing)
+        )
