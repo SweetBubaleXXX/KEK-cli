@@ -141,15 +141,19 @@ class CliAdapter:
     @handle_exception
     @pinentry("key_id")
     def encrypt(self, args: Namespace, password: Optional[str] = None):
+        key = self.key_storage.get(
+            args.key_id or self.key_storage.default_key,
+            password
+        )
+        if not args.files:
+            return sys.stdout.buffer.write(
+                key.encrypt(sys.stdin.buffer.read())
+            )
         for file in args.files:
             overwrite = self.__should_overwrite(args)
             input_file = File(file.name, overwrite)
             output_path = args.output_file or input_file.output_path
             output_file = EncryptedFile(output_path, overwrite)
-            key = self.key_storage.get(
-                args.key_id or self.key_storage.default_key,
-                password
-            )
             if args.no_chunk or input_file == output_file:
                 encrypted_bytes = input_file.encrypt(key)
                 output_file.write(encrypted_bytes)
@@ -166,17 +170,21 @@ class CliAdapter:
     @handle_exception
     @pinentry("key_id")
     def decrypt(self, args: Namespace, password: Optional[str] = None):
+        key = self.key_storage.get(
+            args.key_id or self.key_storage.default_key,
+            password
+        )
+        if isinstance(key, PublicKEK):
+            raise TypeError("Can't decrypt data using public key")
+        if not args.files:
+            return sys.stdout.buffer.write(
+                key.decrypt(sys.stdin.buffer.read())
+            )
         for file in args.files:
             overwrite = self.__should_overwrite(args)
             input_file = EncryptedFile(file.name, overwrite)
             output_path = args.output_file or input_file.output_path
             output_file = File(output_path, overwrite)
-            key = self.key_storage.get(
-                args.key_id or self.key_storage.default_key,
-                password
-            )
-            if isinstance(key, PublicKEK):
-                raise TypeError("Can't decrypt data using public key")
             if args.no_chunk or input_file == output_file:
                 decrypted_bytes = input_file.decrypt(key)
                 output_file.write(decrypted_bytes)
@@ -193,17 +201,21 @@ class CliAdapter:
     @handle_exception
     @pinentry("key_id")
     def sign(self, args: Namespace, password: Optional[str] = None):
+        key = self.key_storage.get(
+            args.key_id or self.key_storage.default_key,
+            password
+        )
+        if isinstance(key, PublicKEK):
+            raise TypeError("Can't sign data using public key")
+        if not args.files:
+            return sys.stdout.buffer.write(
+                key.sign(sys.stdin.buffer.read())
+            )
         for file in args.files:
             overwrite = self.__should_overwrite(args)
             input_file = File(file.name, overwrite)
             output_path = args.output_file or input_file.output_path
             output_file = SignatureFile(output_path, overwrite)
-            key = self.key_storage.get(
-                args.key_id or self.key_storage.default_key,
-                password
-            )
-            if isinstance(key, PublicKEK):
-                raise TypeError("Can't sign data using public key")
             signature_bytes = input_file.sign(key)
             output_file.write(signature_bytes)
             logging.info("Successfully signed file '%s'", file.name)
@@ -212,12 +224,12 @@ class CliAdapter:
     @handle_exception
     @pinentry("key_id")
     def verify(self, args: Namespace, password: Optional[str] = None):
-        signature_file = SignatureFile(args.signature.name)
-        original_file = File(args.file.name)
         key = self.key_storage.get(
             args.key_id or self.key_storage.default_key,
             password
         )
+        signature_file = SignatureFile(args.signature.name)
+        original_file = File(args.file.name)
         verified = signature_file.verify(key, original_file.read())
         if verified:
             logging.info("Verified")

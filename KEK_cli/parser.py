@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 from KEK.hybrid import PrivateKEK
 
@@ -161,6 +162,6 @@ for subparser in [change_pass_parser, delete_parser,
 for subparser in [encrypt_parser, decrypt_parser, sign_parser]:
     subparser.add_argument(
         "files",
-        nargs="+",
-        type=argparse.FileType("r"),
+        nargs="*",
+        type=argparse.FileType("r")
     )
