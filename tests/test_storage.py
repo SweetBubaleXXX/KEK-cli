@@ -1,7 +1,7 @@
 import os
 
-from KEK_cli.backend import config_file, KeyStorage
 from KEK.hybrid import PrivateKEK
+from KEK_cli.backend import KeyStorage, config_file
 
 from ._tempdir_setup import TestWithTempdir
 
