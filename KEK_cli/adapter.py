@@ -146,9 +146,11 @@ class CliAdapter:
             password
         )
         if args.pipe:
-            return sys.stdout.buffer.write(
-                key.encrypt(sys.stdin.buffer.read())
-            )
+            for chunk in key.encrypt_chunks(sys.stdin.buffer):
+                sys.stdout.buffer.write(chunk)
+            return
+        if not len(args.files):
+            raise ValueError("Files not specified")
         for file in args.files:
             overwrite = self.__should_overwrite(args)
             input_file = File(file.name, overwrite)
@@ -177,9 +179,11 @@ class CliAdapter:
         if isinstance(key, PublicKEK):
             raise TypeError("Can't decrypt data using public key")
         if args.pipe:
-            return sys.stdout.buffer.write(
-                key.decrypt(sys.stdin.buffer.read())
-            )
+            for chunk in key.decrypt_chunks(sys.stdin.buffer):
+                sys.stdout.buffer.write(chunk)
+            return
+        if not len(args.files):
+            raise ValueError("Files not specified")
         for file in args.files:
             overwrite = self.__should_overwrite(args)
             input_file = EncryptedFile(file.name, overwrite)
@@ -211,6 +215,8 @@ class CliAdapter:
             return sys.stdout.buffer.write(
                 key.sign(sys.stdin.buffer.read())
             )
+        if not len(args.files):
+            raise ValueError("Files not specified")
         for file in args.files:
             overwrite = self.__should_overwrite(args)
             input_file = File(file.name, overwrite)
