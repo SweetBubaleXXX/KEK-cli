@@ -1,5 +1,4 @@
 import argparse
-import sys
 
 from KEK.hybrid import PrivateKEK
 
@@ -59,6 +58,13 @@ delete_parser = subparsers.add_parser(
 delete_parser.set_defaults(func=adapter.delete_key)
 
 generate_parser = subparsers.add_parser("generate", help="generate key")
+generate_parser.add_argument(
+    "-n",
+    "--nopass",
+    action="store_true",
+    dest="no_pass",
+    help="don't ask password"
+)
 generate_parser.add_argument(
     "-s",
     "--size",
@@ -160,6 +166,12 @@ for subparser in [change_pass_parser, delete_parser,
     )
 
 for subparser in [encrypt_parser, decrypt_parser, sign_parser]:
+    subparser.add_argument(
+        "-p",
+        "--pipe",
+        action="store_true",
+        help="use stdin and stdout instead of files"
+    )
     subparser.add_argument(
         "files",
         nargs="*",

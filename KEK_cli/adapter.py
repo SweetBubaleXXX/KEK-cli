@@ -132,7 +132,7 @@ class CliAdapter:
 
     @handle_exception
     def generate(self, args: Namespace):
-        password = _ask_new_password()
+        password = _ask_new_password() if not args.no_pass else None
         key = PrivateKEK.generate(args.key_size)
         key_id = self.key_storage.add(key, password or None)
         logging.info("Successfully created new key")
@@ -145,7 +145,7 @@ class CliAdapter:
             args.key_id or self.key_storage.default_key,
             password
         )
-        if not args.files:
+        if args.pipe:
             return sys.stdout.buffer.write(
                 key.encrypt(sys.stdin.buffer.read())
             )
@@ -176,7 +176,7 @@ class CliAdapter:
         )
         if isinstance(key, PublicKEK):
             raise TypeError("Can't decrypt data using public key")
-        if not args.files:
+        if args.pipe:
             return sys.stdout.buffer.write(
                 key.decrypt(sys.stdin.buffer.read())
             )
@@ -207,7 +207,7 @@ class CliAdapter:
         )
         if isinstance(key, PublicKEK):
             raise TypeError("Can't sign data using public key")
-        if not args.files:
+        if args.pipe:
             return sys.stdout.buffer.write(
                 key.sign(sys.stdin.buffer.read())
             )
