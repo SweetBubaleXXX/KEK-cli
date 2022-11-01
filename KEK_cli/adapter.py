@@ -149,7 +149,7 @@ class CliAdapter:
             for chunk in key.encrypt_chunks(sys.stdin.buffer):
                 sys.stdout.buffer.write(chunk)
             return
-        if not len(args.files):
+        if not args.files:
             raise ValueError("Files not specified")
         for file in args.files:
             overwrite = self.__should_overwrite(args)
@@ -182,7 +182,7 @@ class CliAdapter:
             for chunk in key.decrypt_chunks(sys.stdin.buffer):
                 sys.stdout.buffer.write(chunk)
             return
-        if not len(args.files):
+        if not args.files:
             raise ValueError("Files not specified")
         for file in args.files:
             overwrite = self.__should_overwrite(args)
@@ -215,7 +215,7 @@ class CliAdapter:
             return sys.stdout.buffer.write(
                 key.sign(sys.stdin.buffer.read())
             )
-        if not len(args.files):
+        if not args.files:
             raise ValueError("Files not specified")
         for file in args.files:
             overwrite = self.__should_overwrite(args)
@@ -250,7 +250,7 @@ class CliAdapter:
             password = getpass()
         encoded_password = self.key_storage.encode_password(password)
         serialized_bytes = key_file.load(encoded_password)
-        key_id = self.key_storage.add(serialized_bytes)
+        key_id = self.key_storage.add(serialized_bytes, password)
         logging.info("Successfully imported key")
         logging.info("Key id: %s", key_id)
 
