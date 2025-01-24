@@ -1,4 +1,3 @@
-import os
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from typing import Callable
@@ -59,7 +58,7 @@ class PublicKeyFileStorage(PublicKeyStorage):
     def read_public_key(self, key_id: str) -> PublicKey:
         key_path = self._get_key_path(key_id)
 
-        if not os.path.isfile(key_path):
+        if not key_path.is_file():
             raise KeyNotFoundError(key_id)
 
         with open(key_path, "rb") as key_file:
@@ -78,10 +77,10 @@ class PublicKeyFileStorage(PublicKeyStorage):
     def delete_public_key(self, key_id: str) -> None:
         key_path = self._get_key_path(key_id)
 
-        if not os.path.isfile(key_path):
+        if not key_path.is_file():
             raise KeyNotFoundError(key_id)
 
-        os.remove(key_path)
+        key_path.unlink()
 
     def __contains__(self, obj: object) -> bool:
         if isinstance(obj, str):
@@ -92,7 +91,7 @@ class PublicKeyFileStorage(PublicKeyStorage):
             raise TypeError(f"Unsupported type: {type(obj)}")
 
         key_path = self._get_key_path(key_id)
-        return os.path.isfile(key_path)
+        return key_path.is_file()
 
     def _get_key_path(self, key_id: str) -> Path:
         key_filename = get_public_key_filename(key_id)
@@ -108,7 +107,7 @@ class PrivateKeyFileStorage(PrivateKeyStorage):
     ) -> KeyPair:
         key_path = self._get_key_path(key_id)
 
-        if not os.path.isfile(key_path):
+        if not key_path.is_file():
             raise KeyNotFoundError(key_id)
 
         with open(key_path, "rb") as key_file:
@@ -135,10 +134,10 @@ class PrivateKeyFileStorage(PrivateKeyStorage):
     def delete_private_key(self, key_id: str) -> None:
         key_path = self._get_key_path(key_id)
 
-        if not os.path.isfile(key_path):
+        if not key_path.is_file():
             raise KeyNotFoundError(key_id)
 
-        os.remove(key_path)
+        key_path.unlink()
 
     def __contains__(self, obj: object) -> bool:
         if isinstance(obj, str):
@@ -149,7 +148,7 @@ class PrivateKeyFileStorage(PrivateKeyStorage):
             raise TypeError(f"Unsupported type: {type(obj)}")
 
         key_path = self._get_key_path(key_id)
-        return os.path.isfile(key_path)
+        return key_path.is_file()
 
     def _get_key_path(self, key_id: str) -> Path:
         key_filename = get_private_key_filename(key_id)
