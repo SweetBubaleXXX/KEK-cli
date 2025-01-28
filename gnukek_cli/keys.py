@@ -153,3 +153,38 @@ class PrivateKeyFileStorage(PrivateKeyStorage):
     def _get_key_path(self, key_id: str) -> Path:
         key_filename = get_private_key_filename(key_id)
         return self._base_path / key_filename
+
+
+class KeyProvider:
+    _public_key_cache: dict[str, PublicKey]
+    _key_pair_cache: dict[str, KeyPair]
+
+    def __init__(
+        self,
+        public_key_storage: PublicKeyStorage,
+        private_key_storage: PrivateKeyStorage,
+    ) -> None:
+        self._public_key_storage = public_key_storage
+        self._key_pair_storage = private_key_storage
+        self._public_key_cache = {}
+        self._key_pair_cache = {}
+
+    def get_public_key(self, key_id: str) -> PublicKey:
+        if key_id in self._public_key_cache:
+            return self._public_key_cache[key_id]
+
+        public_key = self._public_key_storage.read_public_key(key_id)
+        self._public_key_cache[key_id] = public_key
+
+        return public_key
+
+    def get_key_pair(
+        self, key_id: str, prompt_password: PromptPasswordCallback
+    ) -> KeyPair:
+        if key_id in self._key_pair_cache:
+            return self._key_pair_cache[key_id]
+
+        key_pair = self._key_pair_storage.read_private_key(key_id, prompt_password)
+        self._key_pair_cache[key_id] = key_pair
+
+        return key_pair
