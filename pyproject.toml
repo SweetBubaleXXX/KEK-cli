@@ -9,9 +9,13 @@ authors = ["SweetBubaleXXX <70811772+SweetBubaleXXX@users.noreply.github.com>"]
 license = "GPL-3.0-only"
 readme = "README.md"
 
+[tool.poetry.scripts]
+kek = "gnukek_cli.entrypoint:main"
+
 [tool.poetry.dependencies]
 python = "^3.10"
 gnukek = "^2.0.0a1"
+click = "^8.1.8"
 
 
 [tool.poetry.group.dev.dependencies]
