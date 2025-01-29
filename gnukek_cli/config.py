@@ -30,12 +30,15 @@ class JsonSettingsProvider(SettingsProvider):
 
     _settings: Settings | None = None
 
-    def __init__(self, settings_path: str) -> None:
+    def __init__(self, settings_path: str | Path) -> None:
         self._settings_path = Path(settings_path)
 
     def get_settings(self) -> Settings:
         if self._settings:
             return self._settings.model_copy()
+
+        if not self._settings_path.exists():
+            return Settings()
 
         with open(self._settings_path, "rb") as settings_file:
             raw_content = settings_file.read()

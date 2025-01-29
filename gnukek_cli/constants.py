@@ -1,3 +1,5 @@
 DEFAULT_CONFIG_DIR = "~/.kek"
 
 CONFIG_FILENAME = "config.json"
+
+DEFAULT_KEY_SIZE = 2048

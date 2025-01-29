@@ -1,9 +1,13 @@
 import os
+from unittest.mock import MagicMock
 
 import pytest
 from gnukek import KeyPair, PublicKey
 
-from gnukek_cli.keys import PrivateKeyFileStorage, PublicKeyFileStorage
+from gnukek_cli.config import JsonSettingsProvider
+from gnukek_cli.constants import CONFIG_FILENAME
+from gnukek_cli.keys import KeyProvider, PrivateKeyFileStorage, PublicKeyFileStorage
+from gnukek_cli.passwords import PasswordPrompt
 from tests.constants import SERIALIZED_PRIVATE_KEY, SERIALIZED_PUBLIC_KEY
 
 
@@ -32,3 +36,18 @@ def public_key_file_storage(storage_dir):
 @pytest.fixture()
 def private_key_file_storage(storage_dir):
     return PrivateKeyFileStorage(storage_dir)
+
+
+@pytest.fixture()
+def key_provider(public_key_file_storage, private_key_file_storage):
+    return KeyProvider(public_key_file_storage, private_key_file_storage)
+
+
+@pytest.fixture()
+def settings_provider(storage_dir):
+    return JsonSettingsProvider(storage_dir / CONFIG_FILENAME)
+
+
+@pytest.fixture()
+def password_prompt_mock():
+    return MagicMock(PasswordPrompt)
