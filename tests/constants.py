@@ -131,7 +131,7 @@ ENCRYPTED_MESSAGE = (
     "OeNf/RfMvHOUzDSwpzKKe/7DocTxnikx71GzG0UfZWPmUSL9GFQ643g6wue6vWCpqabHM="
 )
 
-SAMPLE_CONFIG = {
+SAMPLE_SETTINGS = {
     "default": KEY_ID,
     "public": [PUBLIC_KEY_ID],
     "private": [KEY_ID],

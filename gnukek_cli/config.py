@@ -9,7 +9,7 @@ PrivateKeyId = Annotated[str, constr(pattern=r"\w{16}", to_lower=True)]
 PublicKeyId = Annotated[str, constr(pattern=r"\w{16}.pub", to_lower=True)]
 
 
-class Config(BaseSettings):
+class Settings(BaseSettings):
     default: PrivateKeyId | None = None
     public: list[PublicKeyId] = []
     private: list[PrivateKeyId] = []
@@ -17,35 +17,35 @@ class Config(BaseSettings):
     model_config = SettingsConfigDict()
 
 
-class ConfigProvider(metaclass=ABCMeta):
+class SettingsProvider(metaclass=ABCMeta):
     @abstractmethod
-    def get_config(self) -> Config: ...
+    def get_settings(self) -> Settings: ...
 
     @abstractmethod
-    def save_config(self, config: Config) -> None: ...
+    def save_settings(self, settings: Settings) -> None: ...
 
 
-class JsonConfigProvider(ConfigProvider):
+class JsonSettingsProvider(SettingsProvider):
     indent = 2
 
-    _config: Config | None = None
+    _settings: Settings | None = None
 
-    def __init__(self, config_path: str) -> None:
-        self._config_path = Path(config_path)
+    def __init__(self, settings_path: str) -> None:
+        self._settings_path = Path(settings_path)
 
-    def get_config(self) -> Config:
-        if self._config:
-            return self._config.model_copy()
+    def get_settings(self) -> Settings:
+        if self._settings:
+            return self._settings.model_copy()
 
-        with open(self._config_path, "rb") as config_file:
-            raw_content = config_file.read()
+        with open(self._settings_path, "rb") as settings_file:
+            raw_content = settings_file.read()
 
-        self._config = Config.model_validate_json(raw_content)
-        return self._config
+        self._settings = Settings.model_validate_json(raw_content)
+        return self._settings
 
-    def save_config(self, config: Config) -> None:
-        self._config = config
+    def save_settings(self, settings: Settings) -> None:
+        self._settings = settings
 
-        with open(self._config_path, "w") as config_file:
-            raw_content = config.model_dump_json(indent=self.indent)
-            config_file.write(raw_content)
+        with open(self._settings_path, "w") as settings_file:
+            raw_content = settings.model_dump_json(indent=self.indent)
+            settings_file.write(raw_content)

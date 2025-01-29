@@ -1,10 +1,23 @@
+import os
+
 from dependency_injector import containers, providers
 
+from gnukek_cli.config import JsonSettingsProvider
+from gnukek_cli.constants import CONFIG_FILENAME
 from gnukek_cli.keys import KeyProvider, PrivateKeyFileStorage, PublicKeyFileStorage
 
 
 class Container(containers.DeclarativeContainer):
     config = providers.Configuration()
+
+    settings_provider = providers.Singleton(
+        JsonSettingsProvider,
+        settings_path=providers.Callable(
+            os.path.join,
+            config.key_storage_path,
+            CONFIG_FILENAME,
+        ),
+    )
 
     public_key_storage = providers.Factory(
         PublicKeyFileStorage, base_path=config.key_storage_path
