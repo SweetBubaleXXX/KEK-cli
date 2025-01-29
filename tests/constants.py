@@ -1,4 +1,8 @@
-KEY_ID = b"jP\xd9o\x91(\xfe\x1f"
+KEY_ID_BYTES = b"jP\xd9o\x91(\xfe\x1f"
+
+KEY_ID = KEY_ID_BYTES.hex()
+
+PUBLIC_KEY_ID = f"{KEY_ID}.pub"
 
 KEY_SIZE = 2048
 
@@ -126,3 +130,9 @@ ENCRYPTED_MESSAGE = (
     "4TKhd9z+ftupI+vPMEYorNbBVjNjjjTn7UWXvQ+01VAyVsDBJtP6zfxgYt1jGf7KtqPjT5IR3VNl7ablaD"
     "OeNf/RfMvHOUzDSwpzKKe/7DocTxnikx71GzG0UfZWPmUSL9GFQ643g6wue6vWCpqabHM="
 )
+
+SAMPLE_CONFIG = {
+    "default": KEY_ID,
+    "public": [PUBLIC_KEY_ID],
+    "private": [KEY_ID],
+}
