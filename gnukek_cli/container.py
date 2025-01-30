@@ -14,7 +14,6 @@ class Container(containers.DeclarativeContainer):
     wiring_config = containers.WiringConfiguration(
         packages=[
             "gnukek_cli.command_handlers",
-            "gnukek_cli.commands",
         ],
     )
 
