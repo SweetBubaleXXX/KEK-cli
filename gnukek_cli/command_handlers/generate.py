@@ -1,11 +1,13 @@
 from dataclasses import dataclass
 from typing import BinaryIO
 
+from dependency_injector.wiring import Provide, inject
 from gnukek import KeyPair
 from gnukek.constants import KeySize
 
 from gnukek_cli.config import SettingsProvider
 from gnukek_cli.constants import DEFAULT_KEY_SIZE
+from gnukek_cli.container import Container
 from gnukek_cli.helpers import get_public_key_id
 from gnukek_cli.keys import PrivateKeyStorage, PublicKeyStorage
 from gnukek_cli.passwords import PasswordPrompt
@@ -20,15 +22,16 @@ class GenerateKeyContext:
 
 
 class GenerateKeyHandler:
+    @inject
     def __init__(
         self,
         context: GenerateKeyContext,
         *,
-        public_key_storage: PublicKeyStorage,
-        private_key_storage: PrivateKeyStorage,
-        settings_provider: SettingsProvider,
-        password_prompt: PasswordPrompt,
-        output_buffer: BinaryIO,
+        public_key_storage: PublicKeyStorage = Provide[Container.public_key_storage],
+        private_key_storage: PrivateKeyStorage = Provide[Container.private_key_storage],
+        settings_provider: SettingsProvider = Provide[Container.settings_provider],
+        password_prompt: PasswordPrompt = Provide[Container.password_prompt],
+        output_buffer: BinaryIO = Provide[Container.output_buffer],
     ) -> None:
         self.context = context
         self._public_key_storage = public_key_storage
