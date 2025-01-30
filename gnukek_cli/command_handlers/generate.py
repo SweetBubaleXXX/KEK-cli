@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import BinaryIO
 
 from gnukek import KeyPair
 from gnukek.constants import KeySize
@@ -27,12 +28,14 @@ class GenerateKeyHandler:
         private_key_storage: PrivateKeyStorage,
         settings_provider: SettingsProvider,
         password_prompt: PasswordPrompt,
+        output_buffer: BinaryIO,
     ) -> None:
         self.context = context
         self._public_key_storage = public_key_storage
         self._private_key_storage = private_key_storage
         self._settings_provider = settings_provider
         self._password_prompt = password_prompt
+        self._output_buffer = output_buffer
 
     def __call__(self) -> None:
         key_password = self._get_key_password()
@@ -40,7 +43,8 @@ class GenerateKeyHandler:
         if self.context.save:
             self._save_key_pair(key_pair, key_password)
         else:
-            raise NotImplementedError()
+            serialized_private_key = key_pair.serialize(password=key_password)
+            self._output_buffer.write(serialized_private_key)
 
     def _get_key_password(self) -> bytes | None:
         if self.context.prompt_password:

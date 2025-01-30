@@ -1,4 +1,5 @@
 import functools
+import io
 import json
 
 import pytest
@@ -11,12 +12,18 @@ from gnukek_cli.helpers import get_public_key_id
 from gnukek_cli.keys import get_private_key_filename, get_public_key_filename
 
 
+@pytest.fixture()
+def output_buffer():
+    return io.BytesIO()
+
+
 @pytest.fixture
 def create_handler(
     public_key_file_storage,
     private_key_file_storage,
     settings_provider,
     password_prompt_mock,
+    output_buffer,
 ):
     return functools.partial(
         GenerateKeyHandler,
@@ -24,6 +31,7 @@ def create_handler(
         private_key_storage=private_key_file_storage,
         settings_provider=settings_provider,
         password_prompt=password_prompt_mock,
+        output_buffer=output_buffer,
     )
 
 
@@ -81,3 +89,12 @@ def test_generate_key(
     with open(public_key_path, "rb") as public_key_file:
         public_key = public_key_file.read()
         assert get_key_type(public_key) == SerializedKeyType.PUBLIC_KEY
+
+
+def test_generate_key_no_save(create_handler, output_buffer):
+    handle = create_handler(GenerateKeyContext(prompt_password=False, save=False))
+    handle()
+
+    written_to_buffer = output_buffer.getvalue()
+    key_type = get_key_type(written_to_buffer)
+    assert key_type == SerializedKeyType.PRIVATE_KEY

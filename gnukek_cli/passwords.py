@@ -13,7 +13,9 @@ class PasswordPrompt(metaclass=ABCMeta):
 
 class ClickPasswordPrompt(PasswordPrompt):
     def get_password(self, key_id: str) -> bytes:
-        return click.prompt(f"Enter password for {key_id}", hide_input=True)
+        return click.prompt(f"Enter password for {key_id}", hide_input=True, err=True)
 
     def create_password(self) -> bytes:
-        return click.prompt("Enter password", hide_input=True, confirmation_prompt=True)
+        return click.prompt(
+            "Enter password", hide_input=True, confirmation_prompt=True, err=True
+        )
