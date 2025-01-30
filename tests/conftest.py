@@ -1,4 +1,5 @@
 import io
+import json
 import os
 from unittest.mock import MagicMock
 
@@ -9,7 +10,11 @@ from gnukek_cli.config import JsonSettingsProvider
 from gnukek_cli.constants import CONFIG_FILENAME
 from gnukek_cli.keys import KeyProvider, PrivateKeyFileStorage, PublicKeyFileStorage
 from gnukek_cli.passwords import PasswordPrompt
-from tests.constants import SERIALIZED_PRIVATE_KEY, SERIALIZED_PUBLIC_KEY
+from tests.constants import (
+    SAMPLE_SETTINGS,
+    SERIALIZED_PRIVATE_KEY,
+    SERIALIZED_PUBLIC_KEY,
+)
 
 
 @pytest.fixture()
@@ -47,6 +52,16 @@ def key_provider(public_key_file_storage, private_key_file_storage):
 @pytest.fixture()
 def settings_provider(storage_dir):
     return JsonSettingsProvider(storage_dir / CONFIG_FILENAME)
+
+
+@pytest.fixture()
+def settings_file(storage_dir):
+    settings_file_path = storage_dir / CONFIG_FILENAME
+
+    with open(settings_file_path, "w") as f:
+        json.dump(SAMPLE_SETTINGS, f)
+
+    return settings_file_path
 
 
 @pytest.fixture()

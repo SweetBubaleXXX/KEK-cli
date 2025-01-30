@@ -8,16 +8,6 @@ from tests.constants import KEY_ID, SAMPLE_SETTINGS
 
 
 @pytest.fixture()
-def settings_file(storage_dir):
-    settings_file_path = storage_dir / CONFIG_FILENAME
-
-    with open(settings_file_path, "w") as f:
-        json.dump(SAMPLE_SETTINGS, f)
-
-    return settings_file_path
-
-
-@pytest.fixture()
 def json_settings_provider(settings_file):
     return JsonSettingsProvider(settings_file)
 
