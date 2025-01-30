@@ -8,7 +8,6 @@ from gnukek.constants import KeySize
 from gnukek_cli.config import SettingsProvider
 from gnukek_cli.constants import DEFAULT_KEY_SIZE
 from gnukek_cli.container import Container
-from gnukek_cli.helpers import get_public_key_id
 from gnukek_cli.keys import PrivateKeyStorage, PublicKeyStorage
 from gnukek_cli.passwords import PasswordPrompt
 
@@ -63,7 +62,7 @@ class GenerateKeyHandler:
         settings = self._settings_provider.get_settings()
         key_id_hex = key_pair.key_id.hex()
         settings.private.append(key_id_hex)
-        settings.public.append(get_public_key_id(key_id_hex))
+        settings.public.append(key_id_hex)
         if not settings.default:
             settings.default = key_id_hex
         self._settings_provider.save_settings(settings)

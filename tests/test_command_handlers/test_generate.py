@@ -7,7 +7,6 @@ from gnukek.utils import get_key_type
 
 from gnukek_cli.command_handlers.generate import GenerateKeyContext, GenerateKeyHandler
 from gnukek_cli.constants import CONFIG_FILENAME
-from gnukek_cli.helpers import get_public_key_id
 from gnukek_cli.keys import get_private_key_filename, get_public_key_filename
 
 
@@ -72,7 +71,7 @@ def test_generate_key(
 
     key_id = settings["default"]
     assert key_id in settings["private"]
-    assert get_public_key_id(key_id) in settings["public"]
+    assert key_id in settings["public"]
 
     private_key_path = storage_dir / get_private_key_filename(key_id)
     with open(private_key_path, "rb") as private_key_file:

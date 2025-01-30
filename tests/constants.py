@@ -2,8 +2,6 @@ KEY_ID_BYTES = b"jP\xd9o\x91(\xfe\x1f"
 
 KEY_ID = KEY_ID_BYTES.hex()
 
-PUBLIC_KEY_ID = f"{KEY_ID}.pub"
-
 KEY_SIZE = 2048
 
 KEY_ENCRYPTION_PASSWORD = b"testpass"
@@ -133,6 +131,6 @@ ENCRYPTED_MESSAGE = (
 
 SAMPLE_SETTINGS = {
     "default": KEY_ID,
-    "public": [PUBLIC_KEY_ID],
+    "public": [KEY_ID],
     "private": [KEY_ID],
 }

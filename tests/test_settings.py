@@ -4,7 +4,7 @@ import pytest
 
 from gnukek_cli.config import JsonSettingsProvider, Settings
 from gnukek_cli.constants import CONFIG_FILENAME
-from tests.constants import KEY_ID, PUBLIC_KEY_ID, SAMPLE_SETTINGS
+from tests.constants import KEY_ID, SAMPLE_SETTINGS
 
 
 @pytest.fixture()
@@ -27,7 +27,7 @@ def test_json_settings_get(json_settings_provider):
 
     assert isinstance(settings, Settings)
     assert settings.default == KEY_ID
-    assert settings.public == [PUBLIC_KEY_ID]
+    assert settings.public == [KEY_ID]
     assert settings.private == [KEY_ID]
 
 
@@ -49,5 +49,5 @@ def test_json_settings_save(json_settings_provider, settings_file):
     with open(settings_file) as f:
         settings_content = json.load(f)
         assert settings_content["default"] == new_key_id
-        assert settings_content["public"] == [PUBLIC_KEY_ID]
+        assert settings_content["public"] == [KEY_ID]
         assert new_key_id in settings_content["private"]

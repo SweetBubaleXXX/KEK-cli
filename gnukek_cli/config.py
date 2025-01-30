@@ -5,14 +5,13 @@ from typing import Annotated
 from pydantic import constr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-PrivateKeyId = Annotated[str, constr(pattern=r"\w{16}", to_lower=True)]
-PublicKeyId = Annotated[str, constr(pattern=r"\w{16}.pub", to_lower=True)]
+KeyId = Annotated[str, constr(pattern=r"\w{16}", to_lower=True)]
 
 
 class Settings(BaseSettings):
-    default: PrivateKeyId | None = None
-    public: list[PublicKeyId] = []
-    private: list[PrivateKeyId] = []
+    default: KeyId | None = None
+    public: list[KeyId] = []
+    private: list[KeyId] = []
 
     model_config = SettingsConfigDict()
 
