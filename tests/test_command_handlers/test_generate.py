@@ -48,11 +48,11 @@ def create_handler(
     ],
 )
 def test_generate_key(
+    context,
+    expected_private_key_type,
     create_handler,
     storage_dir,
     password_prompt_mock,
-    context,
-    expected_private_key_type,
 ):
     if context.prompt_password:
         password_prompt_mock.create_password.return_value = b"password"
