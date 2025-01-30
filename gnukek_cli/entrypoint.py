@@ -21,6 +21,7 @@ def main():
     )
 
     cli.add_command(commands.generate)
+    cli.add_command(commands.version)
 
     cli()
 
