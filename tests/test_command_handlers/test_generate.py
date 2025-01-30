@@ -1,5 +1,4 @@
 import functools
-import io
 import json
 
 import pytest
@@ -10,11 +9,6 @@ from gnukek_cli.command_handlers.generate import GenerateKeyContext, GenerateKey
 from gnukek_cli.constants import CONFIG_FILENAME
 from gnukek_cli.helpers import get_public_key_id
 from gnukek_cli.keys import get_private_key_filename, get_public_key_filename
-
-
-@pytest.fixture()
-def output_buffer():
-    return io.BytesIO()
 
 
 @pytest.fixture

@@ -1,3 +1,4 @@
+import io
 import os
 from unittest.mock import MagicMock
 
@@ -51,3 +52,8 @@ def settings_provider(storage_dir):
 @pytest.fixture()
 def password_prompt_mock():
     return MagicMock(PasswordPrompt)
+
+
+@pytest.fixture()
+def output_buffer():
+    return io.BytesIO()
