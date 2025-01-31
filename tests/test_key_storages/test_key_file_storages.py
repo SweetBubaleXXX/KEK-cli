@@ -8,34 +8,12 @@ from gnukek.utils import get_key_type
 from gnukek_cli.exceptions import KeyNotFoundError
 from gnukek_cli.keys import get_private_key_filename, get_public_key_filename
 from tests.constants import (
-    ENCRYPTED_PRIVATE_KEY,
     KEY_ENCRYPTION_PASSWORD,
     KEY_ID,
     KEY_ID_BYTES,
     SERIALIZED_PRIVATE_KEY,
     SERIALIZED_PUBLIC_KEY,
 )
-
-
-@pytest.fixture()
-def saved_public_key(storage_dir):
-    key_path = storage_dir / get_public_key_filename(KEY_ID)
-    with open(key_path, "wb") as key_file:
-        key_file.write(SERIALIZED_PUBLIC_KEY)
-
-
-@pytest.fixture()
-def saved_private_key(storage_dir):
-    key_path = storage_dir / get_private_key_filename(KEY_ID)
-    with open(key_path, "wb") as key_file:
-        key_file.write(SERIALIZED_PRIVATE_KEY)
-
-
-@pytest.fixture()
-def saved_encrypted_private_key(storage_dir):
-    key_path = storage_dir / get_private_key_filename(KEY_ID)
-    with open(key_path, "wb") as key_file:
-        key_file.write(ENCRYPTED_PRIVATE_KEY)
 
 
 @pytest.mark.usefixtures("saved_public_key")

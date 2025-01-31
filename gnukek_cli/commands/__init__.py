@@ -1,3 +1,4 @@
+from .delete_key import delete_key  # noqa: F401
 from .generate import generate  # noqa: F401
 from .import_keys import import_keys  # noqa: F401
 from .list_keys import list_keys  # noqa: F401

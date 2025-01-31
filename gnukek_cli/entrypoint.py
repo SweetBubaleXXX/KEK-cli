@@ -20,6 +20,7 @@ def main():
         as_=os.path.expanduser,
     )
 
+    cli.add_command(commands.delete_key)
     cli.add_command(commands.generate)
     cli.add_command(commands.import_keys)
     cli.add_command(commands.list_keys)
