@@ -27,6 +27,9 @@ class PublicKeyStorage(metaclass=ABCMeta):
 
 class PrivateKeyStorage(metaclass=ABCMeta):
     @abstractmethod
+    def read_private_key_raw(self, key_id: str) -> bytes: ...
+
+    @abstractmethod
     def read_private_key(
         self, key_id: str, prompt_password: PromptPasswordCallback
     ) -> KeyPair: ...
@@ -102,22 +105,25 @@ class PrivateKeyFileStorage(PrivateKeyStorage):
     def __init__(self, base_path: str) -> None:
         self._base_path = Path(base_path)
 
-    def read_private_key(
-        self, key_id: str, prompt_password: PromptPasswordCallback
-    ) -> KeyPair:
+    def read_private_key_raw(self, key_id: str) -> bytes:
         key_path = self._get_key_path(key_id)
 
         if not key_path.is_file():
             raise KeyNotFoundError(key_id)
 
         with open(key_path, "rb") as key_file:
-            serialized_key = key_file.read()
+            return key_file.read()
 
-        password: bytes | None = None
-
+    def read_private_key(
+        self, key_id: str, prompt_password: PromptPasswordCallback
+    ) -> KeyPair:
+        serialized_key = self.read_private_key_raw(key_id)
         key_type = get_key_type(serialized_key)
+
         if key_type == SerializedKeyType.ENCRYPTED_PRIVATE_KEY:
             password = prompt_password()
+        else:
+            password = None
 
         return KeyPair.load(serialized_key, password=password)
 
