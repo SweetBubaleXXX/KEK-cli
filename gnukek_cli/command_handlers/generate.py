@@ -14,7 +14,7 @@ from gnukek_cli.passwords import PasswordPrompt
 
 @dataclass
 class GenerateKeyContext:
-    key_size: KeySize = DEFAULT_KEY_SIZE
+    key_size: KeySize = DEFAULT_KEY_SIZE  # type: ignore
     password: bytes | None = None
     prompt_password: bool = True
     save: bool = True

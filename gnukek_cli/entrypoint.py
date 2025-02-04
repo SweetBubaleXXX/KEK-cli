@@ -21,6 +21,7 @@ def main():
     )
 
     cli.add_command(commands.delete_key)
+    cli.add_command(commands.encrypt)
     cli.add_command(commands.export)
     cli.add_command(commands.generate)
     cli.add_command(commands.import_keys)

@@ -1,5 +1,4 @@
 import functools
-import json
 from io import BytesIO
 
 import pytest
@@ -8,10 +7,10 @@ from gnukek_cli.command_handlers.export import ExportContext, ExportHandler
 from tests.constants import (
     KEY_ENCRYPTION_PASSWORD,
     KEY_ID,
-    SAMPLE_SETTINGS,
     SERIALIZED_PRIVATE_KEY,
     SERIALIZED_PUBLIC_KEY,
 )
+from tests.helpers import remove_public_keys_from_settings
 
 
 @pytest.fixture()
@@ -83,10 +82,7 @@ def test_export_public_key(create_handler):
 def test_export_public_key_from_private_key(
     create_handler, password_prompt_mock, settings_file
 ):
-    with open(settings_file, "w") as f:
-        config_with_public_key = SAMPLE_SETTINGS.copy()
-        config_with_public_key["public"] = []
-        json.dump(config_with_public_key, f)
+    remove_public_keys_from_settings(settings_file)
 
     password_prompt_mock.get_password.return_value = KEY_ENCRYPTION_PASSWORD
     output_file = BytesIO()

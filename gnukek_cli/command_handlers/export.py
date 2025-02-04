@@ -1,4 +1,3 @@
-import itertools
 from dataclasses import dataclass
 from typing import BinaryIO
 
@@ -69,14 +68,12 @@ class ExportHandler:
     def _export_public_key(self) -> None:
         settings = self._settings_provider.get_settings()
 
-        all_keys = set(itertools.chain(settings.private, settings.public))
-        if self.context.key_id not in all_keys:
-            raise KeyNotFoundError(self.context.key_id)
-
         if self.context.key_id in settings.public:
             self._serialize_public_key()
-        else:
+        elif self.context.key_id in settings.private:
             self._serialize_public_key_from_private()
+        else:
+            raise KeyNotFoundError(self.context.key_id)
 
     def _serialize_public_key_from_private(self):
         key_pair = self._private_key_storage.read_private_key(
