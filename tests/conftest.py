@@ -1,3 +1,4 @@
+import functools
 import io
 import json
 import os
@@ -95,7 +96,11 @@ def saved_encrypted_private_key(storage_dir):
 
 @pytest.fixture()
 def password_prompt_mock():
-    return MagicMock(PasswordPrompt)
+    mock = MagicMock(PasswordPrompt)
+    mock.get_password_callback = functools.partial(
+        PasswordPrompt.get_password_callback, mock
+    )
+    return mock
 
 
 @pytest.fixture()

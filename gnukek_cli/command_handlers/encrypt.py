@@ -68,7 +68,8 @@ class EncryptHandler:
             return self._public_key_storage.read_public_key(key_id)
         elif key_id in settings.private:
             key_pair = self._private_key_storage.read_private_key(
-                key_id, self._password_prompt.get_password
+                key_id,
+                self._password_prompt.get_password_callback(key_id=key_id),
             )
             return key_pair.public_key
         else:

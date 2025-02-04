@@ -1,14 +1,12 @@
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
-from typing import Callable
 
 from gnukek import KeyPair, PublicKey
 from gnukek.constants import SerializedKeyType
 from gnukek.utils import get_key_type
 
 from gnukek_cli.exceptions import KeyNotFoundError
-
-PromptPasswordCallback = Callable[[], bytes]
+from gnukek_cli.passwords import PromptPasswordCallback
 
 
 class PublicKeyStorage(metaclass=ABCMeta):

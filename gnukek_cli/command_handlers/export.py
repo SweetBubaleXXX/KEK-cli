@@ -77,7 +77,8 @@ class ExportHandler:
 
     def _serialize_public_key_from_private(self):
         key_pair = self._private_key_storage.read_private_key(
-            self.context.key_id, self._password_prompt.get_password
+            self.context.key_id,
+            self._password_prompt.get_password_callback(key_id=self.context.key_id),
         )
         serialized_key = key_pair.public_key.serialize()
         self.context.file.write(serialized_key)

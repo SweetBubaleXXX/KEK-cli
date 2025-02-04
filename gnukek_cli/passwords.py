@@ -1,6 +1,10 @@
+import functools
 from abc import ABCMeta, abstractmethod
+from typing import Callable
 
 import click
+
+PromptPasswordCallback = Callable[[], bytes]
 
 
 class PasswordPrompt(metaclass=ABCMeta):
@@ -9,6 +13,11 @@ class PasswordPrompt(metaclass=ABCMeta):
 
     @abstractmethod
     def create_password(self) -> bytes | None: ...
+
+    def get_password_callback(
+        self, key_id: str | None = None
+    ) -> PromptPasswordCallback:
+        return functools.partial(self.get_password, key_id=key_id)
 
 
 class ClickPasswordPrompt(PasswordPrompt):

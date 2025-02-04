@@ -20,6 +20,7 @@ def main():
         as_=os.path.expanduser,
     )
 
+    cli.add_command(commands.decrypt)
     cli.add_command(commands.delete_key)
     cli.add_command(commands.encrypt)
     cli.add_command(commands.export)
