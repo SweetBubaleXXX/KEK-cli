@@ -422,13 +422,13 @@ pyflakes = ">=3.2.0,<3.3.0"
 
 [[package]]
 name = "gnukek"
-version = "2.0.0a1"
+version = "2.0.0a2"
 description = "Key Encryption Key"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "gnukek-2.0.0a1-py3-none-any.whl", hash = "sha256:2194bd847154d64d6b1a7d8ec78f4cdf5354070327645f06f90910234ba04c3e"},
-    {file = "gnukek-2.0.0a1.tar.gz", hash = "sha256:e25f96c132343125308d8d062470cc96908cf194369f2780e8e5c231d1daa43f"},
+    {file = "gnukek-2.0.0a2-py3-none-any.whl", hash = "sha256:5f1f75b5344468beb72db429fba7aa14cf6de4bf08478b112ebddbf7c4110da2"},
+    {file = "gnukek-2.0.0a2.tar.gz", hash = "sha256:63fe3e680178d6ba3495183b6e4c8ea9087a4829e9af68e09a62b6b2996278c2"},
 ]
 
 [package.dependencies]
@@ -888,4 +888,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "cce661249aa29bc1398874b094caf947538c81c70a4fd22904fd51aa6df973f7"
+content-hash = "3bee6a9bc7181c1b3f6b7eafe06207fa3d11dae6a5cfb13eaffb80978ee9d6df"
