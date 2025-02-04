@@ -42,18 +42,19 @@ class EncryptHandler:
         public_key = self._get_public_key()
 
         encryptor = public_key.get_encryptor(version=self.context.version)
-
         metadata = encryptor.get_metadata()
-        self.context.output_file.write(metadata)
 
         if self.context.chunk_length:
+            self.context.output_file.write(metadata)
             for chunk in encryptor.encrypt_stream(
                 self.context.input_file,
                 chunk_length=self.context.chunk_length,
             ):
                 self.context.output_file.write(chunk)
         else:
-            encrypted_content = encryptor.encrypt(self.context.input_file.read())
+            original_content = self.context.input_file.read()
+            encrypted_content = encryptor.encrypt(original_content)
+            self.context.output_file.write(metadata)
             self.context.output_file.write(encrypted_content)
 
     def _get_public_key(self) -> PublicKey:
