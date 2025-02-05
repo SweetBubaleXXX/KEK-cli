@@ -27,6 +27,7 @@ def main():
     cli.add_command(commands.generate)
     cli.add_command(commands.import_keys)
     cli.add_command(commands.list_keys)
+    cli.add_command(commands.sign)
     cli.add_command(commands.version)
 
     cli()
