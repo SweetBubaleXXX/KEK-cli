@@ -4,6 +4,7 @@ from typing import BinaryIO
 
 from dependency_injector.wiring import Provide, inject
 from gnukek.constants import CHUNK_LENGTH
+from gnukek.keys import KeyPair
 from gnukek.utils import extract_key_id, preprocess_encrypted_stream
 
 from gnukek_cli.config import SettingsProvider
@@ -47,13 +48,8 @@ class DecryptHandler:
         preprocessed_stream = preprocess_encrypted_stream(self.context.input_file)
 
         key_id = preprocessed_stream.key_id.hex()
+        key_pair = self._get_key_pair(key_id)
 
-        if key_id not in self._settings.private:
-            raise KeyNotFoundError(key_id)
-
-        key_pair = self._private_key_storage.read_private_key(
-            key_id, self._password_prompt.get_password_callback(key_id=key_id)
-        )
         decryption_iterator = key_pair.decrypt_stream(
             preprocessed_stream, chunk_length=self.context.chunk_length
         )
@@ -62,14 +58,18 @@ class DecryptHandler:
 
     def _decrypt_inplace(self) -> None:
         encrypted_content = self.context.input_file.read()
+
         key_id_bytes = extract_key_id(encrypted_content)
         key_id = key_id_bytes.hex()
+        key_pair = self._get_key_pair(key_id)
 
+        decrypted_content = key_pair.decrypt(encrypted_content)
+        self.context.output_file.write(decrypted_content)
+
+    def _get_key_pair(self, key_id: str) -> KeyPair:
         if key_id not in self._settings.private:
             raise KeyNotFoundError(key_id)
 
-        key_pair = self._private_key_storage.read_private_key(
+        return self._private_key_storage.read_private_key(
             key_id, self._password_prompt.get_password_callback(key_id=key_id)
         )
-        decrypted_content = key_pair.decrypt(encrypted_content)
-        self.context.output_file.write(decrypted_content)

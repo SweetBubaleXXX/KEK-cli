@@ -2,6 +2,7 @@ import functools
 import io
 import json
 import os
+from base64 import b64decode
 from unittest.mock import MagicMock
 
 import pytest
@@ -18,6 +19,7 @@ from gnukek_cli.keys import (
 )
 from gnukek_cli.passwords import PasswordPrompt
 from tests.constants import (
+    ENCRYPTED_MESSAGE,
     ENCRYPTED_PRIVATE_KEY,
     KEY_ID,
     SAMPLE_SETTINGS,
@@ -34,6 +36,11 @@ def sample_public_key():
 @pytest.fixture()
 def sample_key_pair():
     return KeyPair.load(SERIALIZED_PRIVATE_KEY)
+
+
+@pytest.fixture
+def encrypted_message():
+    return b64decode(ENCRYPTED_MESSAGE)
 
 
 @pytest.fixture()
