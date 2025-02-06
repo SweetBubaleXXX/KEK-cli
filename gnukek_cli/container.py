@@ -1,6 +1,6 @@
 import os
-import sys
 
+import click
 from dependency_injector import containers, providers
 
 from gnukek_cli.config import JsonSettingsProvider
@@ -43,4 +43,4 @@ class Container(containers.DeclarativeContainer):
         password_prompt=password_prompt,
     )
 
-    output_buffer = providers.Object(sys.stdout.buffer)
+    output_buffer = providers.Singleton(click.get_binary_stream, "stdout")
