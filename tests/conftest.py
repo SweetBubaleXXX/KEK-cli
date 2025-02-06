@@ -6,7 +6,7 @@ from base64 import b64decode
 from unittest.mock import MagicMock
 
 import pytest
-from gnukek import KeyPair, PublicKey
+from gnukek.keys import KeyPair, PublicKey
 
 from gnukek_cli.config import JsonSettingsProvider
 from gnukek_cli.constants import CONFIG_FILENAME
@@ -22,6 +22,7 @@ from tests.constants import (
     ENCRYPTED_MESSAGE,
     ENCRYPTED_PRIVATE_KEY,
     KEY_ID,
+    MESSAGE_SIGNATURE_ENCODED,
     SAMPLE_SETTINGS,
     SERIALIZED_PRIVATE_KEY,
     SERIALIZED_PUBLIC_KEY,
@@ -41,6 +42,11 @@ def sample_key_pair():
 @pytest.fixture
 def encrypted_message():
     return b64decode(ENCRYPTED_MESSAGE)
+
+
+@pytest.fixture
+def message_signature():
+    return b64decode(MESSAGE_SIGNATURE_ENCODED)
 
 
 @pytest.fixture()
