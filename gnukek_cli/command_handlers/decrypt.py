@@ -7,7 +7,7 @@ from gnukek.constants import CHUNK_LENGTH
 from gnukek.utils import extract_key_id, preprocess_encrypted_stream
 
 from gnukek_cli.container import Container
-from gnukek_cli.keys import KeyProvider
+from gnukek_cli.keys.provider import KeyProvider
 
 
 @dataclass

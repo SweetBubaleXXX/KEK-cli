@@ -8,7 +8,7 @@ from gnukek.keys import KeyPair, PublicKey
 from gnukek.utils import get_key_type
 
 from gnukek_cli.container import Container
-from gnukek_cli.keys import KeyProvider
+from gnukek_cli.keys.provider import KeyProvider
 from gnukek_cli.passwords import PasswordPrompt
 
 

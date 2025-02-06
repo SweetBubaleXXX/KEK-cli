@@ -7,7 +7,7 @@ from gnukek.utils import get_key_type
 
 from gnukek_cli.command_handlers.generate import GenerateKeyContext, GenerateKeyHandler
 from gnukek_cli.constants import CONFIG_FILENAME
-from gnukek_cli.keys import get_private_key_filename, get_public_key_filename
+from gnukek_cli.keys.storages import get_private_key_filename, get_public_key_filename
 
 
 @pytest.fixture

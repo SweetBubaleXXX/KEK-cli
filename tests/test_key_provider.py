@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from gnukek_cli.exceptions import KeyNotFoundError
-from gnukek_cli.keys import KeyProvider, PrivateKeyStorage, PublicKeyStorage
+from gnukek_cli.keys.provider import KeyProvider, PrivateKeyStorage, PublicKeyStorage
 from tests.constants import KEY_ID
 from tests.helpers import remove_public_keys_from_settings
 
@@ -111,3 +111,24 @@ def test_add_key_pair(
     assert KEY_ID in settings.private
     assert KEY_ID in settings.public
     assert settings.default == KEY_ID
+
+
+@pytest.mark.usefixtures("settings_file")
+def test_remove_public_key(key_provider, public_key_storage_mock, settings_provider):
+    key_provider.remove_public_key(KEY_ID)
+
+    public_key_storage_mock.delete_public_key.assert_called_once_with(KEY_ID)
+
+    settings = settings_provider.load()
+    assert KEY_ID not in settings.public
+
+
+@pytest.mark.usefixtures("settings_file")
+def test_remove_private_key(key_provider, private_key_storage_mock, settings_provider):
+    key_provider.remove_private_key(KEY_ID)
+
+    private_key_storage_mock.delete_private_key.assert_called_once_with(KEY_ID)
+
+    settings = settings_provider.load()
+    assert KEY_ID not in settings.private
+    assert settings.default is None

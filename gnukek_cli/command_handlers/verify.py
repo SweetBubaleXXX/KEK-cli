@@ -6,7 +6,7 @@ from gnukek.constants import CHUNK_LENGTH
 from gnukek.exceptions import VerificationError
 
 from gnukek_cli.container import Container
-from gnukek_cli.keys import KeyProvider
+from gnukek_cli.keys.provider import KeyProvider
 
 
 @dataclass

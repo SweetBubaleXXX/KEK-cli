@@ -4,22 +4,13 @@ import json
 import pytest
 
 from gnukek_cli.command_handlers.delete_key import DeleteKeyContext, DeleteKeyHandler
-from gnukek_cli.keys import get_private_key_filename, get_public_key_filename
+from gnukek_cli.keys.storages import get_private_key_filename, get_public_key_filename
 from tests.constants import KEY_ID
 
 
 @pytest.fixture()
-def create_handler(
-    public_key_file_storage,
-    private_key_file_storage,
-    settings_provider,
-):
-    return functools.partial(
-        DeleteKeyHandler,
-        public_key_storage=public_key_file_storage,
-        private_key_storage=private_key_file_storage,
-        settings_provider=settings_provider,
-    )
+def create_handler(key_provider):
+    return functools.partial(DeleteKeyHandler, key_provider=key_provider)
 
 
 @pytest.mark.usefixtures("saved_private_key", "saved_public_key")

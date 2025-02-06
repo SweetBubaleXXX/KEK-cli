@@ -10,8 +10,8 @@ from gnukek.keys import KeyPair, PublicKey
 
 from gnukek_cli.config import JsonSettingsProvider
 from gnukek_cli.constants import CONFIG_FILENAME
-from gnukek_cli.keys import (
-    KeyProvider,
+from gnukek_cli.keys.provider import KeyProvider
+from gnukek_cli.keys.storages import (
     PrivateKeyFileStorage,
     PublicKeyFileStorage,
     get_private_key_filename,

@@ -5,7 +5,8 @@ from dependency_injector import containers, providers
 
 from gnukek_cli.config import JsonSettingsProvider
 from gnukek_cli.constants import CONFIG_FILENAME
-from gnukek_cli.keys import KeyProvider, PrivateKeyFileStorage, PublicKeyFileStorage
+from gnukek_cli.keys.provider import KeyProvider
+from gnukek_cli.keys.storages import PrivateKeyFileStorage, PublicKeyFileStorage
 from gnukek_cli.passwords import ClickPasswordPrompt
 
 

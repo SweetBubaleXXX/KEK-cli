@@ -5,7 +5,7 @@ from dependency_injector.wiring import Provide, inject
 from gnukek.constants import CHUNK_LENGTH, LATEST_KEK_VERSION
 
 from gnukek_cli.container import Container
-from gnukek_cli.keys import KeyProvider
+from gnukek_cli.keys.provider import KeyProvider
 
 
 @dataclass

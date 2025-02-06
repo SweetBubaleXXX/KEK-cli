@@ -7,7 +7,7 @@ from gnukek.constants import SerializedKeyType
 
 from gnukek_cli.command_handlers.import_keys import ImportKeysContext, ImportKeysHandler
 from gnukek_cli.constants import CONFIG_FILENAME
-from gnukek_cli.keys import get_private_key_filename, get_public_key_filename
+from gnukek_cli.keys.storages import get_private_key_filename, get_public_key_filename
 from tests.constants import (
     ENCRYPTED_KEY_BATCH,
     ENCRYPTED_PRIVATE_KEY,
