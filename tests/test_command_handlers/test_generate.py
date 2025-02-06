@@ -11,18 +11,10 @@ from gnukek_cli.keys import get_private_key_filename, get_public_key_filename
 
 
 @pytest.fixture
-def create_handler(
-    public_key_file_storage,
-    private_key_file_storage,
-    settings_provider,
-    password_prompt_mock,
-    output_buffer,
-):
+def create_handler(key_provider, password_prompt_mock, output_buffer):
     return functools.partial(
         GenerateKeyHandler,
-        public_key_storage=public_key_file_storage,
-        private_key_storage=private_key_file_storage,
-        settings_provider=settings_provider,
+        key_provider=key_provider,
         password_prompt=password_prompt_mock,
         output_buffer=output_buffer,
     )

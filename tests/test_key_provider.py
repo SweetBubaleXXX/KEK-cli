@@ -80,3 +80,34 @@ def test_get_default_key_pair(key_provider, private_key_storage_mock):
 def test_get_key_pair_empty_settings(key_provider):
     with pytest.raises(KeyNotFoundError):
         key_provider.get_key_pair(KEY_ID)
+
+
+def test_add_public_key(
+    key_provider, sample_public_key, public_key_storage_mock, settings_provider
+):
+    key_provider.add_public_key(sample_public_key)
+
+    public_key_storage_mock.save_public_key.assert_called_once()
+
+    settings = settings_provider.load()
+    assert KEY_ID in settings.public
+
+
+def test_add_key_pair(
+    key_provider,
+    sample_key_pair,
+    public_key_storage_mock,
+    private_key_storage_mock,
+    settings_provider,
+):
+    key_provider.add_key_pair(sample_key_pair)
+
+    public_key_storage_mock.save_public_key.assert_called_once()
+    private_key_storage_mock.save_private_key.assert_called_once_with(
+        sample_key_pair, None
+    )
+
+    settings = settings_provider.load()
+    assert KEY_ID in settings.private
+    assert KEY_ID in settings.public
+    assert settings.default == KEY_ID

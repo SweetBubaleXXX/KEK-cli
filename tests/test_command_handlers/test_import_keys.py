@@ -19,17 +19,10 @@ from tests.constants import (
 
 
 @pytest.fixture()
-def create_handler(
-    public_key_file_storage,
-    private_key_file_storage,
-    settings_provider,
-    password_prompt_mock,
-):
+def create_handler(key_provider, password_prompt_mock):
     return functools.partial(
         ImportKeysHandler,
-        public_key_storage=public_key_file_storage,
-        private_key_storage=private_key_file_storage,
-        settings_provider=settings_provider,
+        key_provider=key_provider,
         password_prompt=password_prompt_mock,
     )
 
