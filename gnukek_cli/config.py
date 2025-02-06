@@ -5,6 +5,8 @@ from typing import Annotated
 from pydantic import constr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from gnukek_cli.constants import CONFIG_DIR_PERMISSIONS
+
 KeyId = Annotated[str, constr(pattern=r"\w{16}", to_lower=True)]
 
 
@@ -51,6 +53,9 @@ class JsonSettingsProvider(SettingsProvider):
 
     def save_settings(self, settings: Settings) -> None:
         self._settings = settings
+
+        if not self._settings_path.parent.exists():
+            self._settings_path.parent.mkdir(CONFIG_DIR_PERMISSIONS)
 
         with open(self._settings_path, "w") as settings_file:
             raw_content = settings.model_dump_json(indent=self.indent)

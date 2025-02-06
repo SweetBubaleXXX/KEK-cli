@@ -5,6 +5,7 @@ from gnukek.constants import SerializedKeyType
 from gnukek.keys import KeyPair, PublicKey
 from gnukek.utils import get_key_type
 
+from gnukek_cli.constants import CONFIG_DIR_PERMISSIONS, KEY_FILE_PERMISSIONS
 from gnukek_cli.exceptions import KeyNotFoundError
 from gnukek_cli.passwords import PromptPasswordCallback
 
@@ -44,7 +45,15 @@ class PrivateKeyStorage(metaclass=ABCMeta):
     def __contains__(self, obj: object) -> bool: ...
 
 
-class PublicKeyFileStorage(PublicKeyStorage):
+class _FileStorage:
+    def __init__(self, base_path: str) -> None:
+        self._base_path = Path(base_path)
+
+    def ensure_folder_exists(self) -> None:
+        self._base_path.mkdir(CONFIG_DIR_PERMISSIONS, parents=True, exist_ok=True)
+
+
+class PublicKeyFileStorage(PublicKeyStorage, _FileStorage):
     def __init__(self, base_path: str) -> None:
         self._base_path = Path(base_path)
 
@@ -63,9 +72,9 @@ class PublicKeyFileStorage(PublicKeyStorage):
         key_path = self._get_key_path(public_key.key_id.hex())
 
         serialized_key = public_key.serialize()
-
-        with open(key_path, "wb") as key_file:
-            key_file.write(serialized_key)
+        self.ensure_folder_exists()
+        key_path.write_bytes(serialized_key)
+        key_path.chmod(KEY_FILE_PERMISSIONS)
 
     def delete_public_key(self, key_id: str) -> None:
         key_path = self._get_key_path(key_id)
@@ -91,7 +100,7 @@ class PublicKeyFileStorage(PublicKeyStorage):
         return self._base_path / key_filename
 
 
-class PrivateKeyFileStorage(PrivateKeyStorage):
+class PrivateKeyFileStorage(PrivateKeyStorage, _FileStorage):
     def __init__(self, base_path: str) -> None:
         self._base_path = Path(base_path)
 
@@ -124,8 +133,9 @@ class PrivateKeyFileStorage(PrivateKeyStorage):
 
         serialized_key = key_pair.serialize(password=password)
 
-        with open(key_path, "wb") as key_file:
-            key_file.write(serialized_key)
+        self.ensure_folder_exists()
+        key_path.write_bytes(serialized_key)
+        key_path.chmod(KEY_FILE_PERMISSIONS)
 
     def delete_private_key(self, key_id: str) -> None:
         key_path = self._get_key_path(key_id)
