@@ -26,6 +26,8 @@ class Container(containers.DeclarativeContainer):
         ),
     )
 
+    password_prompt = providers.Singleton(ClickPasswordPrompt)
+
     public_key_storage = providers.Factory(
         PublicKeyFileStorage, base_path=config.key_storage_path
     )
@@ -36,7 +38,8 @@ class Container(containers.DeclarativeContainer):
         KeyProvider,
         public_key_storage=public_key_storage,
         private_key_storage=private_key_storage,
+        settings_provider=settings_provider,
+        password_prompt=password_prompt,
     )
 
-    password_prompt = providers.Singleton(ClickPasswordPrompt)
     output_buffer = providers.Object(sys.stdout.buffer)

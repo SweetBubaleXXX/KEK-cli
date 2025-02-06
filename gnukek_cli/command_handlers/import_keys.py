@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from typing import BinaryIO
 
 from dependency_injector.wiring import Provide, inject
-from gnukek import KeyPair, PublicKey
 from gnukek.constants import SerializedKeyType
+from gnukek.keys import KeyPair, PublicKey
 from gnukek.utils import get_key_type
 
 from gnukek_cli.config import SettingsProvider

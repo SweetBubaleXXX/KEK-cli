@@ -4,11 +4,8 @@ from typing import BinaryIO
 from dependency_injector.wiring import Provide, inject
 from gnukek.constants import CHUNK_LENGTH
 
-from gnukek_cli.config import SettingsProvider
 from gnukek_cli.container import Container
-from gnukek_cli.exceptions import KeyNotFoundError
-from gnukek_cli.keys import PrivateKeyStorage
-from gnukek_cli.passwords import PasswordPrompt
+from gnukek_cli.keys import KeyProvider
 
 
 @dataclass
@@ -25,27 +22,13 @@ class SignHandler:
         self,
         context: SignContext,
         *,
-        private_key_storage: PrivateKeyStorage = Provide[Container.private_key_storage],
-        settings_provider: SettingsProvider = Provide[Container.settings_provider],
-        password_prompt: PasswordPrompt = Provide[Container.password_prompt],
+        key_provider: KeyProvider = Provide[Container.key_provider],
     ) -> None:
         self.context = context
-        self._private_key_storage = private_key_storage
-        self._settings_provider = settings_provider
-        self._password_prompt = password_prompt
+        self._key_provider = key_provider
 
     def __call__(self) -> None:
-        settings = self._settings_provider.get_settings()
-
-        key_id = self.context.key_id or settings.default
-        if not key_id:
-            raise KeyNotFoundError("default")
-        if key_id not in settings.private:
-            raise KeyNotFoundError(key_id)
-
-        key_pair = self._private_key_storage.read_private_key(
-            key_id, self._password_prompt.get_password_callback(key_id)
-        )
+        key_pair = self._key_provider.get_key_pair(self.context.key_id)
 
         if self.context.chunk_length:
             signature = key_pair.sign_stream(

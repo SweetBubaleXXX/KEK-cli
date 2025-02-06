@@ -11,19 +11,8 @@ from tests.helpers import remove_public_keys_from_settings
 
 
 @pytest.fixture()
-def create_handler(
-    public_key_file_storage,
-    private_key_file_storage,
-    settings_provider,
-    password_prompt_mock,
-):
-    return functools.partial(
-        VerifyHandler,
-        public_key_storage=public_key_file_storage,
-        private_key_storage=private_key_file_storage,
-        settings_provider=settings_provider,
-        password_prompt=password_prompt_mock,
-    )
+def create_handler(key_provider):
+    return functools.partial(VerifyHandler, key_provider=key_provider)
 
 
 @pytest.mark.usefixtures("saved_public_key", "settings_file")

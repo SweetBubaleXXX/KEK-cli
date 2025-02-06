@@ -1,12 +1,13 @@
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
 
-from gnukek import KeyPair, PublicKey
 from gnukek.constants import SerializedKeyType
+from gnukek.keys import KeyPair, PublicKey
 from gnukek.utils import get_key_type
 
+from gnukek_cli.config import SettingsProvider
 from gnukek_cli.exceptions import KeyNotFoundError
-from gnukek_cli.passwords import PromptPasswordCallback
+from gnukek_cli.passwords import PasswordPrompt, PromptPasswordCallback
 
 
 class PublicKeyStorage(metaclass=ABCMeta):
@@ -167,28 +168,58 @@ class KeyProvider:
         self,
         public_key_storage: PublicKeyStorage,
         private_key_storage: PrivateKeyStorage,
+        settings_provider: SettingsProvider,
+        password_prompt: PasswordPrompt,
     ) -> None:
+        self.settings_provider = settings_provider
         self._public_key_storage = public_key_storage
         self._key_pair_storage = private_key_storage
+        self._password_prompt = password_prompt
         self._public_key_cache = {}
         self._key_pair_cache = {}
 
-    def get_public_key(self, key_id: str) -> PublicKey:
+    def get_public_key(self, key_id: str | None = None) -> PublicKey:
+        settings = self.settings_provider.get_settings()
+
+        if not key_id:
+            key_id = settings.default
+        if not key_id:
+            raise KeyNotFoundError("default")
+
         if key_id in self._public_key_cache:
             return self._public_key_cache[key_id]
 
-        public_key = self._public_key_storage.read_public_key(key_id)
+        if key_id in settings.public:
+            public_key = self._public_key_storage.read_public_key(key_id)
+        elif key_id in settings.private:
+            key_pair = self._key_pair_storage.read_private_key(
+                key_id, self._password_prompt.get_password_callback(key_id)
+            )
+            public_key = key_pair.public_key
+        else:
+            raise KeyNotFoundError(key_id)
+
         self._public_key_cache[key_id] = public_key
 
         return public_key
 
-    def get_key_pair(
-        self, key_id: str, prompt_password: PromptPasswordCallback
-    ) -> KeyPair:
+    def get_key_pair(self, key_id: str | None = None) -> KeyPair:
+        settings = self.settings_provider.get_settings()
+
+        if not key_id:
+            key_id = settings.default
+        if not key_id:
+            raise KeyNotFoundError("default")
+
         if key_id in self._key_pair_cache:
             return self._key_pair_cache[key_id]
 
-        key_pair = self._key_pair_storage.read_private_key(key_id, prompt_password)
+        if key_id not in settings.private:
+            raise KeyNotFoundError(key_id)
+
+        key_pair = self._key_pair_storage.read_private_key(
+            key_id, self._password_prompt.get_password_callback(key_id)
+        )
         self._key_pair_cache[key_id] = key_pair
 
         return key_pair

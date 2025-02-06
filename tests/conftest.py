@@ -67,11 +67,6 @@ def private_key_file_storage(storage_dir):
 
 
 @pytest.fixture()
-def key_provider(public_key_file_storage, private_key_file_storage):
-    return KeyProvider(public_key_file_storage, private_key_file_storage)
-
-
-@pytest.fixture()
 def settings_provider(storage_dir):
     return JsonSettingsProvider(storage_dir / CONFIG_FILENAME)
 
@@ -84,6 +79,22 @@ def settings_file(storage_dir):
         json.dump(SAMPLE_SETTINGS, f)
 
     return settings_file_path
+
+
+@pytest.fixture()
+def key_provider(
+    public_key_file_storage,
+    private_key_file_storage,
+    settings_provider,
+    password_prompt_mock,
+    # settings_file,
+):
+    return KeyProvider(
+        public_key_file_storage,
+        private_key_file_storage,
+        settings_provider,
+        password_prompt_mock,
+    )
 
 
 @pytest.fixture()

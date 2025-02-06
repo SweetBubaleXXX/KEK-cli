@@ -18,6 +18,9 @@ class Settings(BaseSettings):
 
 class SettingsProvider(metaclass=ABCMeta):
     @abstractmethod
+    def load(self) -> Settings: ...
+
+    @abstractmethod
     def get_settings(self) -> Settings: ...
 
     @abstractmethod
@@ -32,18 +35,19 @@ class JsonSettingsProvider(SettingsProvider):
     def __init__(self, settings_path: str | Path) -> None:
         self._settings_path = Path(settings_path)
 
+    def load(self) -> Settings:
+        if self._settings_path.exists():
+            raw_content = self._settings_path.read_bytes()
+            self._settings = Settings.model_validate_json(raw_content)
+        else:
+            self._settings = Settings()
+        return self._settings
+
     def get_settings(self) -> Settings:
         if self._settings:
             return self._settings.model_copy()
 
-        if not self._settings_path.exists():
-            return Settings()
-
-        with open(self._settings_path, "rb") as settings_file:
-            raw_content = settings_file.read()
-
-        self._settings = Settings.model_validate_json(raw_content)
-        return self._settings
+        return self.load()
 
     def save_settings(self, settings: Settings) -> None:
         self._settings = settings

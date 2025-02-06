@@ -9,17 +9,8 @@ from tests.constants import KEY_ENCRYPTION_PASSWORD, SAMPLE_MESSAGE
 
 
 @pytest.fixture()
-def create_handler(
-    private_key_file_storage,
-    settings_provider,
-    password_prompt_mock,
-):
-    return functools.partial(
-        DecryptHandler,
-        private_key_storage=private_key_file_storage,
-        settings_provider=settings_provider,
-        password_prompt=password_prompt_mock,
-    )
+def create_handler(key_provider):
+    return functools.partial(DecryptHandler, key_provider=key_provider)
 
 
 @pytest.mark.usefixtures("saved_encrypted_private_key", "settings_file")
