@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import BinaryIO
 
@@ -6,6 +7,8 @@ from gnukek.constants import CHUNK_LENGTH
 
 from gnukek_cli.container import Container
 from gnukek_cli.keys.provider import KeyProvider
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -29,13 +32,18 @@ class SignHandler:
 
     def __call__(self) -> None:
         key_pair = self._key_provider.get_key_pair(self.context.key_id)
+        logger.debug(f"Using {key_pair.key_id.hex()} key for signing")
 
         if self.context.chunk_length:
+            logger.debug("Using chunk signing")
+            logger.debug(f"Chunk size: {self.context.chunk_length}")
             signature = key_pair.sign_stream(
                 self.context.input_file, chunk_size=self.context.chunk_length
             )
         else:
+            logger.debug("Using inplace signing")
             content = self.context.input_file.read()
             signature = key_pair.sign(content)
 
         self.context.output_file.write(signature)
+        logger.debug("Signature written")

@@ -5,11 +5,14 @@ import click
 from gnukek_cli import commands
 from gnukek_cli.constants import DEFAULT_CONFIG_DIR
 from gnukek_cli.container import Container
+from gnukek_cli.logger import configure_logging
 
 
 @click.group()
-def cli() -> None:
-    pass
+@click.option("-v", "--verbose", is_flag=True, help="use verbose logging")
+@click.option("-q", "--quiet", is_flag=True, help="disable logging")
+def cli(verbose: bool, quiet: bool) -> None:
+    configure_logging(verbose=verbose, quiet=quiet)
 
 
 def main():

@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from io import RawIOBase
 from typing import BinaryIO
@@ -8,6 +9,8 @@ from gnukek.utils import extract_key_id, preprocess_encrypted_stream
 
 from gnukek_cli.container import Container
 from gnukek_cli.keys.provider import KeyProvider
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -30,14 +33,18 @@ class DecryptHandler:
 
     def __call__(self) -> None:
         if self.context.chunk_length:
+            logger.debug("Using chunk decryption")
+            logger.debug(f"Chunk size: {self.context.chunk_length}")
             self._decrypt_chunked()
         else:
+            logger.debug("Using inplace decryption")
             self._decrypt_inplace()
 
     def _decrypt_chunked(self) -> None:
         preprocessed_stream = preprocess_encrypted_stream(self.context.input_file)
 
         key_id = preprocessed_stream.key_id.hex()
+        logger.debug(f"Data is encrypted with key: {key_id}")
         key_pair = self._key_provider.get_key_pair(key_id)
 
         decryption_iterator = key_pair.decrypt_stream(
@@ -46,12 +53,17 @@ class DecryptHandler:
         for chunk in decryption_iterator:
             self.context.output_file.write(chunk)
 
+        logger.debug("Decryption finished")
+
     def _decrypt_inplace(self) -> None:
         encrypted_content = self.context.input_file.read()
 
         key_id_bytes = extract_key_id(encrypted_content)
         key_id = key_id_bytes.hex()
+        logger.debug(f"Data is encrypted with key: {key_id}")
         key_pair = self._key_provider.get_key_pair(key_id)
 
         decrypted_content = key_pair.decrypt(encrypted_content)
         self.context.output_file.write(decrypted_content)
+
+        logger.debug("Decryption finished")

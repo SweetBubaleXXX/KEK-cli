@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import BinaryIO
 
@@ -9,6 +10,8 @@ from gnukek_cli.constants import DEFAULT_KEY_SIZE
 from gnukek_cli.container import Container
 from gnukek_cli.keys.provider import KeyProvider
 from gnukek_cli.passwords import PasswordPrompt
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -38,8 +41,10 @@ class GenerateKeyHandler:
         key_password = self._get_key_password()
         key_pair = KeyPair.generate(self.context.key_size)
         if self.context.save:
+            logger.debug(f"Saving key pair: {key_pair.key_id.hex()}")
             self._key_provider.add_key_pair(key_pair, key_password)
         else:
+            logger.debug(f"Exporting key pair: {key_pair.key_id.hex()}")
             serialized_private_key = key_pair.serialize(password=key_password)
             self._output_buffer.write(serialized_private_key)
 

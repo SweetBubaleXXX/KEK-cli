@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import BinaryIO
 
@@ -8,6 +9,8 @@ from gnukek_cli.container import Container
 from gnukek_cli.exceptions import KeyNotFoundError
 from gnukek_cli.keys.storages import PrivateKeyStorage, PublicKeyStorage
 from gnukek_cli.passwords import PasswordPrompt
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -37,8 +40,10 @@ class ExportHandler:
 
     def __call__(self) -> None:
         if self.context.public:
+            logger.debug("Exporting public key")
             self._export_public_key()
         else:
+            logger.debug("Exporting private key")
             self._export_private_key()
 
     def _export_private_key(self) -> None:
@@ -47,6 +52,7 @@ class ExportHandler:
             raise KeyNotFoundError(self.context.key_id)
 
         if not self.context.prompt_password:
+            logger.debug("Returning raw private key")
             self._serialize_raw_private_key()
         else:
             self._serialize_private_key()
@@ -69,8 +75,10 @@ class ExportHandler:
         settings = self._settings_provider.get_settings()
 
         if self.context.key_id in settings.public:
+            logger.debug("Returning public key directly")
             self._serialize_public_key()
         elif self.context.key_id in settings.private:
+            logger.debug("Exporting public key from private key")
             self._serialize_public_key_from_private()
         else:
             raise KeyNotFoundError(self.context.key_id)

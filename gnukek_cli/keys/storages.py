@@ -1,3 +1,4 @@
+import logging
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
 
@@ -8,6 +9,8 @@ from gnukek.utils import get_key_type
 from gnukek_cli.constants import CONFIG_DIR_PERMISSIONS, KEY_FILE_PERMISSIONS
 from gnukek_cli.exceptions import KeyNotFoundError
 from gnukek_cli.passwords import PromptPasswordCallback
+
+logger = logging.getLogger(__name__)
 
 
 class PublicKeyStorage(metaclass=ABCMeta):
@@ -66,6 +69,7 @@ class PublicKeyFileStorage(PublicKeyStorage, _FileStorage):
         with open(key_path, "rb") as key_file:
             serialized_key = key_file.read()
 
+        logger.debug(f"Read public key: {key_id}")
         return PublicKey.load(serialized_key)
 
     def save_public_key(self, public_key: PublicKey) -> None:
@@ -75,6 +79,7 @@ class PublicKeyFileStorage(PublicKeyStorage, _FileStorage):
         self.ensure_folder_exists()
         key_path.write_bytes(serialized_key)
         key_path.chmod(KEY_FILE_PERMISSIONS)
+        logger.debug(f"Saved public key: {public_key.key_id.hex()}")
 
     def delete_public_key(self, key_id: str) -> None:
         key_path = self._get_key_path(key_id)
@@ -83,6 +88,7 @@ class PublicKeyFileStorage(PublicKeyStorage, _FileStorage):
             raise KeyNotFoundError(key_id)
 
         key_path.unlink()
+        logger.debug(f"Deleted public key: {key_id}")
 
     def __contains__(self, obj: object) -> bool:
         if isinstance(obj, str):
@@ -124,6 +130,7 @@ class PrivateKeyFileStorage(PrivateKeyStorage, _FileStorage):
         else:
             password = None
 
+        logger.debug(f"Read private key: {key_id}")
         return KeyPair.load(serialized_key, password=password)
 
     def save_private_key(
@@ -136,14 +143,17 @@ class PrivateKeyFileStorage(PrivateKeyStorage, _FileStorage):
         self.ensure_folder_exists()
         key_path.write_bytes(serialized_key)
         key_path.chmod(KEY_FILE_PERMISSIONS)
+        logger.debug(f"Saved private key: {key_pair.key_id.hex()}")
 
     def delete_private_key(self, key_id: str) -> None:
         key_path = self._get_key_path(key_id)
 
         if not key_path.is_file():
+            logger.error(f"Private key not found: {key_id}")
             raise KeyNotFoundError(key_id)
 
         key_path.unlink()
+        logger.debug(f"Deleted private key: {key_id}")
 
     def __contains__(self, obj: object) -> bool:
         if isinstance(obj, str):

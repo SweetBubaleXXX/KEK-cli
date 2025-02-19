@@ -1,3 +1,4 @@
+import logging
 import random
 
 from gnukek.keys import KeyPair, PublicKey
@@ -6,6 +7,8 @@ from gnukek_cli.config import SettingsProvider
 from gnukek_cli.exceptions import KeyNotFoundError
 from gnukek_cli.keys.storages import PrivateKeyStorage, PublicKeyStorage
 from gnukek_cli.passwords import PasswordPrompt
+
+logger = logging.getLogger(__name__)
 
 
 class KeyProvider:
@@ -26,19 +29,23 @@ class KeyProvider:
     def get_public_key(self, key_id: str | None = None) -> PublicKey:
         key_id = self._get_key_id(key_id)
         if key_id in self._public_key_cache:
+            logger.debug(f"Public key for {key_id} retrieved from cache")
             return self._public_key_cache[key_id]
 
         public_key = self._read_public_key(key_id)
         self._public_key_cache[key_id] = public_key
+        logger.debug(f"Public key for {key_id} read from storage")
         return public_key
 
     def get_key_pair(self, key_id: str | None = None) -> KeyPair:
         key_id = self._get_key_id(key_id)
         if key_id in self._key_pair_cache:
+            logger.debug(f"Key pair for {key_id} retrieved from cache")
             return self._key_pair_cache[key_id]
 
         key_pair = self._read_key_pair(key_id)
         self._key_pair_cache[key_id] = key_pair
+        logger.debug(f"Key pair for {key_id} read from storage")
         return key_pair
 
     def add_public_key(self, public_key: PublicKey) -> None:
@@ -50,6 +57,7 @@ class KeyProvider:
         if key_id not in settings.public:
             settings.public.append(key_id)
             self.settings_provider.save_settings(settings)
+        logger.debug(f"Public key for {key_id} added")
 
     def add_key_pair(self, key_pair: KeyPair, password: bytes | None = None) -> None:
         settings = self.settings_provider.get_settings()
@@ -68,6 +76,7 @@ class KeyProvider:
             settings.default = key_id
 
         self.settings_provider.save_settings(settings)
+        logger.debug(f"Key pair for {key_id} added")
 
     def remove_public_key(self, key_id: str) -> None:
         settings = self.settings_provider.get_settings()
@@ -79,6 +88,7 @@ class KeyProvider:
         settings.public.remove(key_id)
 
         self.settings_provider.save_settings(settings)
+        logger.debug(f"Public key for {key_id} removed")
 
     def remove_private_key(self, key_id: str) -> None:
         settings = self.settings_provider.get_settings()
@@ -94,6 +104,7 @@ class KeyProvider:
             )
 
         self.settings_provider.save_settings(settings)
+        logger.debug(f"Private key for {key_id} removed")
 
     def _get_key_id(self, key_id: str | None) -> str:
         settings = self.settings_provider.get_settings()

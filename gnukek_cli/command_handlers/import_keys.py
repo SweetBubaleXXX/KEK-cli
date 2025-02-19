@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import BinaryIO
@@ -10,6 +11,8 @@ from gnukek.utils import get_key_type
 from gnukek_cli.container import Container
 from gnukek_cli.keys.provider import KeyProvider
 from gnukek_cli.passwords import PasswordPrompt
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -34,11 +37,13 @@ class ImportKeysHandler:
 
     def __call__(self) -> None:
         for file in self.context.key_files:
+            logger.info(f"Importing key from file: {getattr(file, "name", "unknown")}")
             self._import_key(file)
 
     def _import_key(self, file: BinaryIO) -> None:
         serialized_key = file.read()
         key_type = get_key_type(serialized_key)
+        logger.debug(f"Got {key_type}")
 
         if key_type == SerializedKeyType.PUBLIC_KEY:
             public_key = PublicKey.load(serialized_key)

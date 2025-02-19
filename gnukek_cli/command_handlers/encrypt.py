@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import BinaryIO
 
@@ -6,6 +7,8 @@ from gnukek.constants import CHUNK_LENGTH, LATEST_KEK_VERSION
 
 from gnukek_cli.container import Container
 from gnukek_cli.keys.provider import KeyProvider
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -31,10 +34,15 @@ class EncryptHandler:
     def __call__(self) -> None:
         public_key = self._key_provider.get_public_key(self.context.key_id)
 
+        logger.debug(f"Using {public_key.key_id.hex()} key for encryption")
+        logger.debug(f"Using v{self.context.version} encryption")
+
         encryptor = public_key.get_encryptor(version=self.context.version)
         metadata = encryptor.get_metadata()
 
         if self.context.chunk_length:
+            logger.debug("Using chunk encryption")
+            logger.debug(f"Chunk size: {self.context.chunk_length}")
             self.context.output_file.write(metadata)
             for chunk in encryptor.encrypt_stream(
                 self.context.input_file,
@@ -42,7 +50,10 @@ class EncryptHandler:
             ):
                 self.context.output_file.write(chunk)
         else:
+            logger.debug("Using inplace encryption")
             original_content = self.context.input_file.read()
             encrypted_content = encryptor.encrypt(original_content)
             self.context.output_file.write(metadata)
             self.context.output_file.write(encrypted_content)
+
+        logger.debug("Encryption finished")
