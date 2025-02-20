@@ -5,6 +5,7 @@ import click
 from gnukek_cli import commands
 from gnukek_cli.constants import DEFAULT_CONFIG_DIR
 from gnukek_cli.container import Container
+from gnukek_cli.exceptions import handle_exceptions
 from gnukek_cli.logger import configure_logging
 
 
@@ -34,7 +35,8 @@ def main():
     cli.add_command(commands.verify)
     cli.add_command(commands.version)
 
-    cli()
+    with handle_exceptions():
+        cli()
 
 
 if __name__ == "__main__":
