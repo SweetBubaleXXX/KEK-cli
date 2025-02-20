@@ -20,9 +20,8 @@ class ListKeysHandler:
     def __call__(self) -> None:
         settings = self._settings_provider.get_settings()
 
-        self._output_buffer.write(
-            f"default key: {settings.default or "null"}\n".encode()
-        )
+        default_key = settings.default or "null"
+        self._output_buffer.write(f"default key: {default_key}\n".encode())
 
         self._output_buffer.write(b"private:\n")
         if settings.private:

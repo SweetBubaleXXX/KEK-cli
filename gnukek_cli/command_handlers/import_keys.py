@@ -37,7 +37,8 @@ class ImportKeysHandler:
 
     def __call__(self) -> None:
         for file in self.context.key_files:
-            logger.debug(f"Importing key from file: {getattr(file, "name", "unknown")}")
+            filename = getattr(file, "name", "unknown")
+            logger.debug(f"Importing key from file: {filename}")
             self._import_key(file)
 
     def _import_key(self, file: BinaryIO) -> None:
