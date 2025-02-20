@@ -34,7 +34,7 @@ class EncryptHandler:
     def __call__(self) -> None:
         public_key = self._key_provider.get_public_key(self.context.key_id)
 
-        logger.debug(f"Using {public_key.key_id.hex()} key for encryption")
+        logger.info(f"Using key: {public_key.key_id.hex()}")
         logger.debug(f"Using v{self.context.version} encryption")
 
         encryptor = public_key.get_encryptor(version=self.context.version)

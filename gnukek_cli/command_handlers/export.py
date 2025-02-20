@@ -40,10 +40,10 @@ class ExportHandler:
 
     def __call__(self) -> None:
         if self.context.public:
-            logger.debug("Exporting public key")
+            logger.debug(f"Exporting public key: {self.context.key_id}")
             self._export_public_key()
         else:
-            logger.debug("Exporting private key")
+            logger.debug(f"Exporting private key: {self.context.key_id}")
             self._export_private_key()
 
     def _export_private_key(self) -> None:

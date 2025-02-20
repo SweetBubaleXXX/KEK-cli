@@ -37,7 +37,7 @@ class ImportKeysHandler:
 
     def __call__(self) -> None:
         for file in self.context.key_files:
-            logger.info(f"Importing key from file: {getattr(file, "name", "unknown")}")
+            logger.debug(f"Importing key from file: {getattr(file, "name", "unknown")}")
             self._import_key(file)
 
     def _import_key(self, file: BinaryIO) -> None:
@@ -48,6 +48,7 @@ class ImportKeysHandler:
         if key_type == SerializedKeyType.PUBLIC_KEY:
             public_key = PublicKey.load(serialized_key)
             self._key_provider.add_public_key(public_key)
+            logger.info(f"Imported public key: {public_key.key_id.hex()}")
         else:
             key_password: bytes | None = None
             if key_type == SerializedKeyType.ENCRYPTED_PRIVATE_KEY:
@@ -55,6 +56,7 @@ class ImportKeysHandler:
 
             key_pair = KeyPair.load(serialized_key, password=key_password)
             self._key_provider.add_key_pair(key_pair, key_password)
+            logger.info(f"Imported key pair: {key_pair.key_id.hex()}")
 
     def _prompt_password(self) -> bytes | None:
         if self.context.prompt_password:

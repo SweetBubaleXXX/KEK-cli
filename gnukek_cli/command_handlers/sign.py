@@ -32,7 +32,7 @@ class SignHandler:
 
     def __call__(self) -> None:
         key_pair = self._key_provider.get_key_pair(self.context.key_id)
-        logger.debug(f"Using {key_pair.key_id.hex()} key for signing")
+        logger.info(f"Using key: {key_pair.key_id.hex()}")
 
         if self.context.chunk_length:
             logger.debug("Using chunk signing")

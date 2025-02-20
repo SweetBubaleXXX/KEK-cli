@@ -55,3 +55,4 @@ class VerifyHandler:
         logger.debug(f"Signature verified: {is_valid}")
         if not is_valid:
             raise VerificationError("Signature is not valid")
+        logger.info("Signature is valid")

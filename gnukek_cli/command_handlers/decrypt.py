@@ -44,7 +44,7 @@ class DecryptHandler:
         preprocessed_stream = preprocess_encrypted_stream(self.context.input_file)
 
         key_id = preprocessed_stream.key_id.hex()
-        logger.debug(f"Data is encrypted with key: {key_id}")
+        logger.info(f"Data is encrypted with key: {key_id}")
         key_pair = self._key_provider.get_key_pair(key_id)
 
         decryption_iterator = key_pair.decrypt_stream(
@@ -60,7 +60,7 @@ class DecryptHandler:
 
         key_id_bytes = extract_key_id(encrypted_content)
         key_id = key_id_bytes.hex()
-        logger.debug(f"Data is encrypted with key: {key_id}")
+        logger.info(f"Data is encrypted with key: {key_id}")
         key_pair = self._key_provider.get_key_pair(key_id)
 
         decrypted_content = key_pair.decrypt(encrypted_content)

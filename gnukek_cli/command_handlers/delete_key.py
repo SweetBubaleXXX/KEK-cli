@@ -31,5 +31,7 @@ class DeleteKeyHandler:
         for key_id in self.context.key_ids:
             logger.debug(f"Removing key: {key_id}")
             self._key_provider.remove_private_key(key_id)
+            logger.info(f"Private key removed: {key_id}")
             if not self.context.keep_public:
                 self._key_provider.remove_public_key(key_id)
+                logger.info(f"Public key removed: {key_id}")

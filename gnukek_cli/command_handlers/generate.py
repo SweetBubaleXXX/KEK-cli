@@ -40,11 +40,15 @@ class GenerateKeyHandler:
     def __call__(self) -> None:
         key_password = self._get_key_password()
         key_pair = KeyPair.generate(self.context.key_size)
+
+        hex_key_id = key_pair.key_id.hex()
+        logger.info(f"Key id: {hex_key_id}")
+
         if self.context.save:
-            logger.debug(f"Saving key pair: {key_pair.key_id.hex()}")
+            logger.debug(f"Saving key pair: {hex_key_id}")
             self._key_provider.add_key_pair(key_pair, key_password)
         else:
-            logger.debug(f"Exporting key pair: {key_pair.key_id.hex()}")
+            logger.debug(f"Exporting key pair: {hex_key_id}")
             serialized_private_key = key_pair.serialize(password=key_password)
             self._output_buffer.write(serialized_private_key)
 
