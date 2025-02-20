@@ -1,0 +1,33 @@
+[tool.isort]
+profile = "black"
+
+[tool.poetry]
+name = "gnukek-cli"
+version = "1.0.0a1"
+description = "Key Encryption Key CLI"
+authors = ["SweetBubaleXXX <70811772+SweetBubaleXXX@users.noreply.github.com>"]
+license = "GPL-3.0-only"
+readme = "README.md"
+
+[tool.poetry.scripts]
+kek = "gnukek_cli.entrypoint:main"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+gnukek = "^2.0.0a2"
+click = "^8.1.8"
+dependency-injector = "^4.45.0"
+pydantic = "^2.10.6"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.1"
+mypy = "^1.14.1"
+black = "^24.10.0"
+flake8 = "^7.1.1"
+isort = "^5.13.2"
+pytest-cov = "^6.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
