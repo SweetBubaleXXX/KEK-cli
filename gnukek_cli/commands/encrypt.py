@@ -5,12 +5,13 @@ import click
 from gnukek.constants import CHUNK_LENGTH, LATEST_KEK_VERSION
 
 from gnukek_cli.command_handlers.encrypt import EncryptContext, EncryptHandler
+from gnukek_cli.utils.completions import KeyIdParam
 
 
 @click.command()
 @click.argument("input_file", type=click.File("rb"))
 @click.argument("output_file", type=click.File("wb"), default="-")
-@click.option("-k", "--key", help="key id to use")
+@click.option("-k", "--key", type=KeyIdParam(), help="key id to use")
 @click.option(
     "--chunk-size",
     type=int,

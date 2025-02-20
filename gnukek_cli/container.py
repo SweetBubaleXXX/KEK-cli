@@ -16,6 +16,9 @@ class Container(containers.DeclarativeContainer):
         packages=[
             "gnukek_cli.command_handlers",
         ],
+        modules=[
+            "gnukek_cli.utils.completions",
+        ],
     )
 
     settings_provider = providers.Singleton(
