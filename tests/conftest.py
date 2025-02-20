@@ -87,7 +87,6 @@ def key_provider(
     private_key_file_storage,
     settings_provider,
     password_prompt_mock,
-    # settings_file,
 ):
     return KeyProvider(
         public_key_file_storage,

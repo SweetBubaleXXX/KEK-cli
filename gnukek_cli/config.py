@@ -3,8 +3,7 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import constr
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import BaseModel, constr
 
 from gnukek_cli.constants import CONFIG_DIR_PERMISSIONS, CONFIG_FILE_ENCODING
 
@@ -13,12 +12,10 @@ KeyId = Annotated[str, constr(pattern=r"\w{16}", to_lower=True)]
 logger = logging.getLogger(__name__)
 
 
-class Settings(BaseSettings):
+class Settings(BaseModel):
     default: KeyId | None = None
     public: list[KeyId] = []
     private: list[KeyId] = []
-
-    model_config = SettingsConfigDict()
 
 
 class SettingsProvider(metaclass=ABCMeta):
