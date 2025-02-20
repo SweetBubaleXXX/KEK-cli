@@ -7,7 +7,7 @@ from gnukek_cli.config import JsonSettingsProvider
 from gnukek_cli.constants import CONFIG_FILENAME
 from gnukek_cli.keys.provider import KeyProvider
 from gnukek_cli.keys.storages import PrivateKeyFileStorage, PublicKeyFileStorage
-from gnukek_cli.passwords import ClickPasswordPrompt
+from gnukek_cli.utils.passwords import ClickPasswordPrompt
 
 
 class Container(containers.DeclarativeContainer):

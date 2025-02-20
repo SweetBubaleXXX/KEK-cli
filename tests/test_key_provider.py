@@ -2,8 +2,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from gnukek_cli.exceptions import KeyNotFoundError
 from gnukek_cli.keys.provider import KeyProvider, PrivateKeyStorage, PublicKeyStorage
+from gnukek_cli.utils.exceptions import KeyNotFoundError
 from tests.constants import KEY_ID
 from tests.helpers import remove_public_keys_from_settings
 

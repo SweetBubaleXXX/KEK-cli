@@ -5,8 +5,8 @@ import click
 from gnukek_cli import commands
 from gnukek_cli.constants import DEFAULT_CONFIG_DIR
 from gnukek_cli.container import Container
-from gnukek_cli.exceptions import handle_exceptions
-from gnukek_cli.logger import configure_logging
+from gnukek_cli.utils.exceptions import handle_exceptions
+from gnukek_cli.utils.logger import configure_logging
 
 
 @click.group()
