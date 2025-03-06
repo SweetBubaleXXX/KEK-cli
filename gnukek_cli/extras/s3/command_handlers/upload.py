@@ -1,6 +1,4 @@
 import logging
-import sys
-from collections.abc import Iterator
 from dataclasses import dataclass
 from io import BytesIO
 from typing import BinaryIO
@@ -11,38 +9,10 @@ from gnukek.constants import LATEST_KEK_VERSION
 
 from gnukek_cli.container import Container
 from gnukek_cli.extras.s3.constants import ENCRYPTION_CHUNK_LENGTH
+from gnukek_cli.extras.s3.utils import LazyEncryptionBuffer
 from gnukek_cli.keys.provider import KeyProvider
 
 logger = logging.getLogger(__name__)
-
-
-class UploadFileBuffer(BytesIO):
-    def __init__(
-        self,
-        metadata: bytes,
-        encryption_iterator: Iterator[bytes],
-    ) -> None:
-        super().__init__(metadata)
-        self._metadata = metadata
-        self._encryption_iterator = encryption_iterator
-
-    def seekable(self) -> bool:
-        return False
-
-    def read(self, size: int | None = -1, /) -> bytes:
-        previous_position = self.tell()
-        bytes_to_read = size if size and size >= 0 else sys.maxsize
-
-        self.seek(0, 2)
-
-        bytes_processed = 0
-        while (
-            chunk := next(self._encryption_iterator, b"")
-        ) and bytes_processed < bytes_to_read:
-            self.write(chunk)
-
-        self.seek(previous_position)
-        return super().read(size)
 
 
 @dataclass
@@ -79,11 +49,14 @@ class UploadHandler:
 
         if self.context.no_chunk:
             logger.debug("Using inplace encryption")
+
             original_content = self.context.input_file.read()
+
             encrypted_buffer = BytesIO()
             encrypted_buffer.write(metadata)
             encrypted_buffer.write(encryptor.encrypt(original_content))
             encrypted_buffer.seek(0)
+
             s3_client.upload_fileobj(
                 encrypted_buffer, self.context.bucket_name, self.context.object_name
             )
@@ -94,7 +67,7 @@ class UploadHandler:
                 self.context.input_file,
                 chunk_length=ENCRYPTION_CHUNK_LENGTH,
             )
-            upload_buffer = UploadFileBuffer(metadata, encryption_iterator)
+            upload_buffer = LazyEncryptionBuffer(metadata, encryption_iterator)
 
             s3_client.upload_fileobj(
                 upload_buffer, self.context.bucket_name, self.context.object_name
