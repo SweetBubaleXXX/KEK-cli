@@ -8,8 +8,26 @@ from gnukek_cli.container import Container
 from gnukek_cli.utils.exceptions import handle_exceptions
 from gnukek_cli.utils.logger import configure_logging
 
+try:
+    import boto3
+except ImportError:
+    boto3 = None
 
-@click.group()
+
+@click.group(
+    commands=[
+        commands.decrypt,
+        commands.delete_key,
+        commands.encrypt,
+        commands.export,
+        commands.generate,
+        commands.import_keys,
+        commands.list_keys,
+        commands.sign,
+        commands.verify,
+        commands.version,
+    ]
+)
 @click.option("-v", "--verbose", is_flag=True, help="use verbose logging")
 @click.option("-q", "--quiet", is_flag=True, help="disable logging")
 def cli(verbose: bool, quiet: bool) -> None:
@@ -24,16 +42,14 @@ def main():
         as_=os.path.expanduser,
     )
 
-    cli.add_command(commands.decrypt)
-    cli.add_command(commands.delete_key)
-    cli.add_command(commands.encrypt)
-    cli.add_command(commands.export)
-    cli.add_command(commands.generate)
-    cli.add_command(commands.import_keys)
-    cli.add_command(commands.list_keys)
-    cli.add_command(commands.sign)
-    cli.add_command(commands.verify)
-    cli.add_command(commands.version)
+    if boto3:
+        from gnukek_cli.extras.s3 import command_handlers
+        from gnukek_cli.extras.s3.commands import s3_commands
+
+        for command in s3_commands:
+            cli.add_command(command)
+
+        container.wire(packages=[command_handlers])
 
     with handle_exceptions():
         cli()
