@@ -20,7 +20,7 @@ def handle_exceptions():
         logger.debug(e, exc_info=True)
         sys.exit(1)
     except Exception as e:
-        logger.error(f"An unexpected error occurred: {e}")
+        logger.error(f"An unexpected error occurred:\n{e}")
         logger.debug(e, exc_info=True)
         sys.exit(1)
 
