@@ -31,7 +31,7 @@ def s3_upload(
 ) -> None:
     """Encrypt and upload file to s3 bucket."""
     if not re.match(r"^[^/]+/.+$", file_location):
-        ctx.fail("file-location must be in the format 'bucket/object'")
+        ctx.fail("File location must be in the format 'bucket/object'")
     bucket_name, object_name = file_location.split("/", 1)
 
     context = UploadContext(
