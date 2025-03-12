@@ -47,11 +47,19 @@ class EncryptedDownloadBuffer(BytesIO):
 
         self._read_position = 0
         self._write_position = 0
+        self._download_finished = False
+
+    def seekable(self) -> bool:
+        return False
+
+    def set_download_finished(self) -> None:
+        self._download_finished = True
 
     def write(self, data: Buffer) -> int:
         with self._condition:
             self.seek(self._write_position)
             bytes_written = super().write(data)
+            self._write_position = self.tell()
             self._condition.notify()
             return bytes_written
 
@@ -61,7 +69,8 @@ class EncryptedDownloadBuffer(BytesIO):
 
         with self._condition:
             self._condition.wait_for(
-                lambda: self._get_unprocessed_buffer_size() >= size,
+                lambda: self._download_finished
+                or self._get_unprocessed_buffer_size() >= size,
                 timeout=DOWNLOAD_BUFFER_TIMEOUT_SEC,
             )
 

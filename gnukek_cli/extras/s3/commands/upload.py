@@ -1,10 +1,10 @@
-import re
 from io import FileIO
 
 import click
 from gnukek.constants import LATEST_KEK_VERSION
 
 from gnukek_cli.extras.s3.command_handlers.upload import UploadContext, UploadHandler
+from gnukek_cli.extras.s3.helpers import parse_s3_object_location
 from gnukek_cli.utils.completions import KeyIdParam
 
 
@@ -30,9 +30,10 @@ def s3_upload(
     version,
 ) -> None:
     """Encrypt and upload file to s3 bucket."""
-    if not re.match(r"^[^/]+/.+$", file_location):
+    try:
+        bucket_name, object_name = parse_s3_object_location(file_location)
+    except ValueError:
         ctx.fail("File location must be in the format 'bucket/object'")
-    bucket_name, object_name = file_location.split("/", 1)
 
     context = UploadContext(
         input_file=input_file,
