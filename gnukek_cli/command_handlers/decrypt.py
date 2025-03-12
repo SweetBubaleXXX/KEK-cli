@@ -1,6 +1,5 @@
 import logging
 from dataclasses import dataclass
-from io import RawIOBase
 from typing import BinaryIO
 
 from dependency_injector.wiring import Provide, inject
@@ -15,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DecryptContext:
-    input_file: RawIOBase
+    input_file: BinaryIO
     output_file: BinaryIO
     chunk_length: int = CHUNK_LENGTH
 
