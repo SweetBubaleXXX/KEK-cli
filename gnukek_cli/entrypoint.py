@@ -7,6 +7,7 @@ from gnukek_cli.constants import DEFAULT_CONFIG_DIR
 from gnukek_cli.container import Container
 from gnukek_cli.utils.exceptions import handle_exceptions
 from gnukek_cli.utils.logger import configure_logging
+from gnukek_cli.utils.monitoring import measure
 
 
 @click.group()
@@ -16,6 +17,7 @@ def cli(verbose: bool, quiet: bool) -> None:
     configure_logging(verbose=verbose, quiet=quiet)
 
 
+@measure
 def main():
     container = Container()
     container.config.key_storage_path.from_env(
