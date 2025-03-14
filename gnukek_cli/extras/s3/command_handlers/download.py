@@ -8,7 +8,7 @@ from dependency_injector.wiring import Provide, inject
 from gnukek.utils import preprocess_encrypted_stream
 
 from gnukek_cli.container import Container
-from gnukek_cli.extras.s3.utils import StreamingDecryptionBuffer
+from gnukek_cli.extras.s3.buffers import StreamingDecryptionBuffer
 from gnukek_cli.keys.provider import KeyProvider
 
 logger = logging.getLogger(__name__)

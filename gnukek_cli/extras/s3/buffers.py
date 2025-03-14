@@ -3,10 +3,14 @@ import sys
 import threading
 from collections import deque
 from collections.abc import Iterator
+from functools import reduce
 from types import TracebackType
 from typing import BinaryIO
 
-from gnukek_cli.extras.s3.constants import DOWNLOAD_BUFFER_TIMEOUT_SEC
+from gnukek_cli.extras.s3.constants import (
+    DOWNLOAD_BUFFER_TIMEOUT_SEC,
+    DOWNLOAD_MEMORY_LIMIT_BYTES,
+)
 
 
 class CustomBuffer(BinaryIO):
@@ -123,6 +127,10 @@ class StreamingDecryptionBuffer(CustomBuffer):
 
     def write(self, chunk: bytes) -> int:  # type: ignore
         with self._condition:
+            self._condition.wait_for(
+                lambda: self._get_cache_size() < DOWNLOAD_MEMORY_LIMIT_BYTES,
+                timeout=DOWNLOAD_BUFFER_TIMEOUT_SEC,
+            )
             self._chunks.append(chunk)
             self._condition.notify()
             return len(chunk)
@@ -150,8 +158,12 @@ class StreamingDecryptionBuffer(CustomBuffer):
 
                 remaining_size = size - len(result_bytes)
                 result_bytes.extend(chunk[:remaining_size])
-
                 if len(chunk) > remaining_size:
                     self._chunks.appendleft(chunk[remaining_size:])
 
+                self._condition.notify()
+
             return bytes(result_bytes)
+
+    def _get_cache_size(self) -> int:
+        return reduce(lambda acc, chunk: acc + len(chunk), self._chunks, 0)

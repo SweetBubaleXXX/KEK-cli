@@ -8,8 +8,8 @@ from dependency_injector.wiring import Provide, inject
 from gnukek.constants import LATEST_KEK_VERSION
 
 from gnukek_cli.container import Container
+from gnukek_cli.extras.s3.buffers import LazyEncryptionBuffer
 from gnukek_cli.extras.s3.constants import ENCRYPTION_CHUNK_LENGTH
-from gnukek_cli.extras.s3.utils import LazyEncryptionBuffer
 from gnukek_cli.keys.provider import KeyProvider
 
 logger = logging.getLogger(__name__)
