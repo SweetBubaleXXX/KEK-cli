@@ -8,7 +8,7 @@ from dependency_injector.wiring import Provide, inject
 from gnukek.utils import preprocess_encrypted_stream
 
 from gnukek_cli.container import Container
-from gnukek_cli.extras.s3.utils import EncryptedDownloadBuffer
+from gnukek_cli.extras.s3.utils import StreamingDecryptionBuffer
 from gnukek_cli.keys.provider import KeyProvider
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ class DownloadHandler:
     def __call__(self) -> None:
         s3_client = boto3.client("s3")
 
-        download_buffer = EncryptedDownloadBuffer()
+        download_buffer = StreamingDecryptionBuffer()
 
         def fetch_file():
             logger.debug("Downloading file")

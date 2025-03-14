@@ -1,10 +1,11 @@
 import os
 import sys
 import threading
+from collections import deque
 from collections.abc import Iterator
 from io import BytesIO
-
-from typing_extensions import Buffer
+from types import TracebackType
+from typing import BinaryIO
 
 from gnukek_cli.extras.s3.constants import DOWNLOAD_BUFFER_TIMEOUT_SEC
 
@@ -40,50 +41,104 @@ class LazyEncryptionBuffer(BytesIO):
         return super().read(size)
 
 
-class EncryptedDownloadBuffer(BytesIO):
+class StreamingDecryptionBuffer(BinaryIO):
     def __init__(self) -> None:
-        super().__init__()
         self._condition = threading.Condition()
 
-        self._read_position = 0
-        self._write_position = 0
+        self._chunks: deque[bytes] = deque()
         self._download_finished = False
+
+    def set_download_finished(self) -> None:
+        with self._condition:
+            self._download_finished = True
+
+    def write(self, chunk: bytes) -> int:  # type: ignore
+        with self._condition:
+            self._chunks.append(chunk)
+            self._condition.notify()
+            return len(chunk)
+
+    def read(self, size: int = -1) -> bytes:
+        if size < 0:
+            raise ValueError("Reading the whole buffer is not supported")
+
+        with self._condition:
+            read_bytes = b""
+
+            while len(read_bytes) < size:
+                self._condition.wait_for(
+                    lambda: self._chunks or self._download_finished,
+                    timeout=DOWNLOAD_BUFFER_TIMEOUT_SEC,
+                )
+
+                try:
+                    chunk = self._chunks.popleft()
+                except IndexError:
+                    chunk = b""
+
+                if not chunk and self._download_finished:
+                    return read_bytes
+
+                remaining_bytes = size - len(read_bytes)
+                read_bytes += chunk[:remaining_bytes]
+
+                if len(chunk) > remaining_bytes:
+                    self._chunks.appendleft(chunk[remaining_bytes:])
+
+            return read_bytes
+
+    def __enter__(self) -> BinaryIO:
+        return self
+
+    def __exit__(
+        self,
+        type: type[BaseException] | None,
+        value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        pass
+
+    def readable(self) -> bool:
+        return True
+
+    def writable(self) -> bool:
+        return True
 
     def seekable(self) -> bool:
         return False
 
-    def set_download_finished(self) -> None:
-        self._download_finished = True
+    def close(self) -> None:
+        pass
 
-    def write(self, data: Buffer) -> int:
-        with self._condition:
-            self.seek(self._write_position)
-            bytes_written = super().write(data)
-            self._write_position = self.tell()
-            self._condition.notify()
-            return bytes_written
+    def flush(self) -> None:
+        pass
 
-    def read(self, size: int | None = -1) -> bytes:
-        if not size or size < 0:
-            raise ValueError("Reading the whole buffer is not supported")
+    def isatty(self) -> bool:
+        return False
 
-        with self._condition:
-            self._condition.wait_for(
-                lambda: self._download_finished
-                or self._get_unprocessed_buffer_size() >= size,
-                timeout=DOWNLOAD_BUFFER_TIMEOUT_SEC,
-            )
+    def tell(self) -> int:
+        raise OSError("tell() is not supported")
 
-            self.seek(self._read_position)
-            read_data = super().read(size)
-            self._read_position = self.tell()
-            return read_data
+    def truncate(self, size: int | None = None) -> int:
+        raise OSError("truncate() is not supported")
 
-    def _get_unprocessed_buffer_size(self) -> int:
-        previous_position = self.tell()
+    def fileno(self) -> int:
+        raise OSError("fileno() is not supported")
 
-        self.seek(0, os.SEEK_END)
-        buffer_size = self.tell()
-        self.seek(previous_position)
+    def seek(self, offset: int, whence: int = os.SEEK_SET) -> int:
+        raise OSError("seek() is not supported")
 
-        return buffer_size - self._read_position
+    def readline(self, size: int = -1) -> bytes:
+        raise OSError("readline() is not supported")
+
+    def readlines(self, hint: int = -1) -> list[bytes]:
+        raise OSError("readlines() is not supported")
+
+    def writelines(self, lines: list[bytes]) -> None:  # type: ignore
+        raise OSError("writelines() is not supported")
+
+    def __iter__(self) -> Iterator[bytes]:
+        raise OSError("__iter__() is not supported")
+
+    def __next__(self) -> bytes:
+        raise OSError("__next__() is not supported")
