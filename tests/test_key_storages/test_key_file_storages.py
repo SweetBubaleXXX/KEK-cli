@@ -5,8 +5,8 @@ from gnukek.constants import SerializedKeyType
 from gnukek.keys import KeyPair, PublicKey
 from gnukek.utils import get_key_type
 
-from gnukek_cli.exceptions import KeyNotFoundError
 from gnukek_cli.keys.storages import get_private_key_filename, get_public_key_filename
+from gnukek_cli.utils.exceptions import KeyNotFoundError
 from tests.constants import (
     ENCRYPTED_PRIVATE_KEY,
     KEY_ENCRYPTION_PASSWORD,

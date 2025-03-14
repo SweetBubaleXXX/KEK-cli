@@ -5,7 +5,7 @@ import pytest
 from gnukek.exceptions import VerificationError
 
 from gnukek_cli.command_handlers.verify import VerifyContext, VerifyHandler
-from gnukek_cli.exceptions import KeyNotFoundError
+from gnukek_cli.utils.exceptions import KeyNotFoundError
 from tests.constants import KEY_ENCRYPTION_PASSWORD, KEY_ID, SAMPLE_MESSAGE
 from tests.helpers import remove_public_keys_from_settings
 

@@ -10,7 +10,7 @@ from gnukek.utils import get_key_type
 
 from gnukek_cli.container import Container
 from gnukek_cli.keys.provider import KeyProvider
-from gnukek_cli.passwords import PasswordPrompt
+from gnukek_cli.utils.passwords import PasswordPrompt
 
 logger = logging.getLogger(__name__)
 

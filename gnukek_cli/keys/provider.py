@@ -4,9 +4,9 @@ import random
 from gnukek.keys import KeyPair, PublicKey
 
 from gnukek_cli.config import SettingsProvider
-from gnukek_cli.exceptions import KeyNotFoundError
 from gnukek_cli.keys.storages import PrivateKeyStorage, PublicKeyStorage
-from gnukek_cli.passwords import PasswordPrompt
+from gnukek_cli.utils.exceptions import KeyNotFoundError
+from gnukek_cli.utils.passwords import PasswordPrompt
 
 logger = logging.getLogger(__name__)
 

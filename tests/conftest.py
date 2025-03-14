@@ -17,7 +17,7 @@ from gnukek_cli.keys.storages import (
     get_private_key_filename,
     get_public_key_filename,
 )
-from gnukek_cli.passwords import PasswordPrompt
+from gnukek_cli.utils.passwords import PasswordPrompt
 from tests.constants import (
     ENCRYPTED_MESSAGE,
     ENCRYPTED_PRIVATE_KEY,

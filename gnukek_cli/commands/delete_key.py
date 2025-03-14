@@ -1,10 +1,11 @@
 import click
 
 from gnukek_cli.command_handlers.delete_key import DeleteKeyContext, DeleteKeyHandler
+from gnukek_cli.utils.completions import KeyIdParam
 
 
 @click.command("delete")
-@click.argument("key_ids", nargs=-1)
+@click.argument("key_ids", type=KeyIdParam(), nargs=-1)
 @click.option(
     "--keep-public",
     is_flag=True,

@@ -4,7 +4,7 @@ from io import BytesIO
 import pytest
 
 from gnukek_cli.command_handlers.decrypt import DecryptContext, DecryptHandler
-from gnukek_cli.exceptions import KeyNotFoundError
+from gnukek_cli.utils.exceptions import KeyNotFoundError
 from tests.constants import KEY_ENCRYPTION_PASSWORD, SAMPLE_MESSAGE
 
 

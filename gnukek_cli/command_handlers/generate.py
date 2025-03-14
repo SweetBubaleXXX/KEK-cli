@@ -9,7 +9,7 @@ from gnukek.keys import KeyPair
 from gnukek_cli.constants import DEFAULT_KEY_SIZE
 from gnukek_cli.container import Container
 from gnukek_cli.keys.provider import KeyProvider
-from gnukek_cli.passwords import PasswordPrompt
+from gnukek_cli.utils.passwords import PasswordPrompt
 
 logger = logging.getLogger(__name__)
 

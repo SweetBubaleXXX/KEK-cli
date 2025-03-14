@@ -7,8 +7,8 @@ from gnukek.keys import KeyPair, PublicKey
 from gnukek.utils import get_key_type
 
 from gnukek_cli.constants import CONFIG_DIR_PERMISSIONS, KEY_FILE_PERMISSIONS
-from gnukek_cli.exceptions import KeyNotFoundError
-from gnukek_cli.passwords import PromptPasswordCallback
+from gnukek_cli.utils.exceptions import KeyNotFoundError
+from gnukek_cli.utils.passwords import PromptPasswordCallback
 
 logger = logging.getLogger(__name__)
 

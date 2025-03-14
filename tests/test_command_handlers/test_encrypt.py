@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from gnukek_cli.command_handlers.encrypt import EncryptContext, EncryptHandler
-from gnukek_cli.exceptions import KeyNotFoundError
+from gnukek_cli.utils.exceptions import KeyNotFoundError
 from tests.constants import KEY_ENCRYPTION_PASSWORD, KEY_ID, SAMPLE_MESSAGE
 from tests.helpers import remove_public_keys_from_settings
 
