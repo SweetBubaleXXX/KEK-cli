@@ -91,6 +91,16 @@ kek s3-download <file_location> <output_file>
 
 > `file_location` - the S3 object location in the format `bucket_name/object_name`
 
+### Shell completions
+
+Run to install bash completions:
+
+```sh
+eval "$(_KEK_COMPLETE=bash_source kek)"
+```
+
+This line can be added to `~/.bashrc`.
+
 ## License
 
 This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for details.
