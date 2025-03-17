@@ -31,6 +31,9 @@ class KeyProvider:
         if key_id in self._public_key_cache:
             logger.debug(f"Public key for {key_id} retrieved from cache")
             return self._public_key_cache[key_id]
+        if key_id in self._key_pair_cache:
+            logger.debug(f"Public key for {key_id} retrieved from key pair cache")
+            return self._key_pair_cache[key_id].public_key
 
         public_key = self._read_public_key(key_id)
         self._public_key_cache[key_id] = public_key
