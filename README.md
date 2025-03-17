@@ -77,6 +77,12 @@ kek sign <input_file> <output_file>
 kek verify <signature_file> <original_file>
 ```
 
+### Open encrypted file in editor
+
+```sh
+kek edit <file>
+```
+
 ### Upload a file to S3
 
 ```sh
