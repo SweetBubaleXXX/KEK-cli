@@ -19,6 +19,7 @@ except ImportError:
     commands=[
         commands.decrypt,
         commands.delete_key,
+        commands.edit,
         commands.encrypt,
         commands.export,
         commands.generate,

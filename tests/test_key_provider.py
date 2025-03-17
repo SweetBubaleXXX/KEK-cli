@@ -55,6 +55,17 @@ def test_get_public_key_from_private(
     private_key_storage_mock.read_private_key.assert_called_once()
 
 
+@pytest.mark.usefixtures("settings_file")
+def test_get_public_key_from_key_pair_cache(
+    key_provider, private_key_storage_mock, public_key_storage_mock
+):
+    assert key_provider.get_key_pair(KEY_ID)
+    private_key_storage_mock.read_private_key.assert_called_once()
+
+    assert key_provider.get_public_key(KEY_ID)
+    public_key_storage_mock.read_public_key.assert_not_called()
+
+
 def test_get_public_key_empty_settings(key_provider):
     with pytest.raises(KeyNotFoundError):
         key_provider.get_public_key(KEY_ID)
