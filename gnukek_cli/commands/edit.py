@@ -1,4 +1,4 @@
-from io import BytesIO, FileIO
+from io import BytesIO
 from pathlib import Path
 
 import click
@@ -12,7 +12,10 @@ DEFAULT_FILE_EXTENSION = ".md"
 
 
 @click.command()
-@click.argument("file", type=click.File("rb+"))
+@click.argument(
+    "file_path",
+    type=click.Path(dir_okay=False, path_type=Path),
+)
 @click.option("-k", "--key", type=KeyIdParam(), help="key id to use for encryption")
 @click.option(
     "--version",
@@ -22,30 +25,29 @@ DEFAULT_FILE_EXTENSION = ".md"
     help="algorithm version to use",
 )
 @click.option("--extension", help="file extension to use when opening file")
-def edit(file: FileIO, key, version, extension: str | None) -> None:
+def edit(file_path: Path, key, version, extension: str | None) -> None:
     """Edit encrypted file."""
 
-    decrypted_buffer = BytesIO()
+    decrypted_content = BytesIO()
 
-    decryption_context = DecryptContext(input_file=file, output_file=decrypted_buffer)
-    handle_decryption = DecryptHandler(decryption_context)
+    if file_path.exists():
+        with open(file_path, "rb") as file:
+            decryption_context = DecryptContext(
+                input_file=file, output_file=decrypted_content
+            )
+            handle_decryption = DecryptHandler(decryption_context)
+            handle_decryption()
 
-    handle_decryption()
-
-    file_path = Path(file.name)
     editor_extension = extension or file_path.suffix or DEFAULT_FILE_EXTENSION
-
-    edited_text = click.edit(decrypted_buffer.getvalue(), extension=editor_extension)
+    edited_text = click.edit(decrypted_content.getvalue(), extension=editor_extension)
 
     if edited_text:
-        encryption_context = EncryptContext(
-            input_file=BytesIO(edited_text),
-            output_file=file,
-            key_id=key,
-            version=version,
-        )
-        handle_encryption = EncryptHandler(encryption_context)
-
-        file.seek(0)
-        file.truncate(0)
-        handle_encryption()
+        with open(file_path, "wb") as file:
+            encryption_context = EncryptContext(
+                input_file=BytesIO(edited_text),
+                output_file=file,
+                key_id=key,
+                version=version,
+            )
+            handle_encryption = EncryptHandler(encryption_context)
+            handle_encryption()
